@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Gestión de arriendo residencial — Administra arrendatarios y pagos." />
+  <title>Rentals — Gestión de Arriendo</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       HEADER — Logo + Toggle de modo Admin / Arrendatario
+       Toggle controlado por app.js: añade/quita .btn-mode--active
+       y muestra/oculta #view-admin / #view-tenant.
+       ═══════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="logo">Rentals<span>.</span></div>
+
+    <!-- Toggle de modo (RF-06). render.js NO toca estos botones;
+         app.js escucha 'click' en #btn-mode-admin y #btn-mode-tenant. -->
+    <nav class="mode-toggle" aria-label="Cambiar modo">
+      <button
+        id="btn-mode-admin"
+        class="btn-mode btn-mode--active"
+        type="button"
+        aria-pressed="true"
+      >
+        Administrador
+      </button>
+      <button
+        id="btn-mode-tenant"
+        class="btn-mode"
+        type="button"
+        aria-pressed="false"
+      >
+        Arrendatario
+      </button>
+    </nav>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════
+       CONTENIDO PRINCIPAL
+       ═══════════════════════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- ───────────────────────────────────────────────────
+         VISTA ADMINISTRADOR  (#view-admin)
+         Visible cuando mode="admin". Clase .view--visible
+         añadida/quitada por app.js.
+         ─────────────────────────────────────────────────── -->
+    <section id="view-admin" class="view view--visible" aria-label="Vista Administrador">
+
+      <div class="admin-layout">
+
+        <!-- ── Columna izquierda (sidebar): lista + formulario ── -->
+        <aside class="admin-sidebar">
+
+          <!-- Lista de tarjetas de arrendatarios
+               Pintada por render.js: RentalsRender.renderTenantList(tenants)
+               Cada tarjeta generada tiene: .card .card--clickable
+               y opcionalmente .card--active para el seleccionado.
+               Al hacer clic app.js actualiza selectedTenantId y
+               llama RentalsRender.renderTenantDetail(tenant, today). -->
+          <div>
+            <p class="section-title">Arrendatarios</p>
+            <div id="admin-tenant-list" class="tenant-list" role="list">
+              <!-- Tarjetas de arrendatario insertadas por render.js.
+                   Estructura de cada tarjeta (referencia para render.js):
+                   <div class="card card--clickable [card--active]" data-id="t-XXX">
+                     <div class="card-header">
+                       <div>
+                         <p class="card-name">Nombre</p>
+                         <p class="card-unit">Depto XXX</p>
+                       </div>
+                       <span class="badge [badge--ok | badge--late]">Al día | Atrasado</span>
+                     </div>
+                   </div>
+              -->
+            </div>
+          </div>
+
+          <!-- Formulario de registro de nuevo arrendatario
+               Submit manejado por app.js; no hay JS inline aquí.
+               IDs de cada campo son los que app.js lee al submit. -->
+          <div class="form-panel">
+            <p class="form-title">Registrar arrendatario</p>
+
+            <form id="admin-register-form" novalidate>
+              <div class="form-grid">
+
+                <!-- Nombre completo -->
+                <div class="form-group form-group--full">
+                  <label for="reg-full-name">Nombre completo</label>
+                  <input
+                    type="text"
+                    id="reg-full-name"
+                    name="fullName"
+                    placeholder="Ej: María Pérez"
+                    autocomplete="name"
+                    required
+                  />
+                </div>
+
+                <!-- Unidad / departamento -->
+                <div class="form-group">
+                  <label for="reg-unit">Unidad / departamento</label>
+                  <input
+                    type="text"
+                    id="reg-unit"
+                    name="unit"
+                    placeholder="Ej: Depto 302"
+                    required
+                  />
+                </div>
+
+                <!-- Teléfono o correo -->
+                <div class="form-group">
+                  <label for="reg-contact">Teléfono o correo</label>
+                  <input
+                    type="text"
+                    id="reg-contact"
+                    name="contact"
+                    placeholder="Ej: maria@mail.com"
+                    required
+                  />
+                </div>
+
+                <!-- Día de pago (1–28) -->
+                <div class="form-group">
+                  <label for="reg-payment-day">Día de pago (1–28)</label>
+                  <input
+                    type="number"
+                    id="reg-payment-day"
+                    name="paymentDay"
+                    min="1"
+                    max="28"
+                    placeholder="5"
+                    required
+                  />
+                </div>
+
+                <!-- Fecha de inicio del arriendo -->
+                <div class="form-group">
+                  <label for="reg-start-date">Fecha de inicio del arriendo</label>
+                  <input
+                    type="date"
+                    id="reg-start-date"
+                    name="startDate"
+                    required
+                  />
+                </div>
+
+                <!-- Monto mensual USD -->
+                <div class="form-group form-group--full">
+                  <label for="reg-monthly-amount">Monto mensual (USD)</label>
+                  <input
+                    type="number"
+                    id="reg-monthly-amount"
+                    name="monthlyAmount"
+                    min="0"
+                    placeholder="450"
+                    required
+                  />
+                </div>
+
+              </div><!-- /.form-grid -->
+
+              <!-- Botón de envío — app.js escucha 'submit' en #admin-register-form -->
+              <button type="submit" class="btn-primary">
+                Registrar arrendatario
+              </button>
+
+            </form><!-- /#admin-register-form -->
+          </div><!-- /.form-panel -->
+
+        </aside><!-- /.admin-sidebar -->
+
+        <!-- ── Columna derecha: panel de detalle del arrendatario seleccionado ── -->
+        <section class="admin-main" aria-label="Detalle de arrendatario">
+
+          <!-- Panel de detalle
+               Pintado por render.js: RentalsRender.renderTenantDetail(tenant, today)
+               Cuando ningún arrendatario está seleccionado, render.js muestra
+               la clase .detail-panel--empty con un mensaje orientativo.
+               Estructura que render.js genera dentro de #admin-tenant-detail:
+                 .detail-title, .detail-unit, .badge, .months-list > .month-tag,
+                 botones .btn-mark-paid con data-tenant-id + data-month,
+                 .charge-row > .charge-desc + .charge-amount,
+                 .total-row > .total-label + .total-amount -->
+          <div id="admin-tenant-detail" class="detail-panel detail-panel--empty" aria-live="polite" aria-atomic="true">
+            <span class="empty-state">Selecciona un arrendatario para ver el detalle</span>
+          </div>
+
+        </section><!-- /.admin-main -->
+
+      </div><!-- /.admin-layout -->
+
+    </section><!-- /#view-admin -->
+
+
+    <!-- ───────────────────────────────────────────────────
+         VISTA ARRENDATARIO  (#view-tenant)
+         Visible cuando mode="tenant". app.js alterna
+         .view--visible entre #view-admin y #view-tenant.
+         ─────────────────────────────────────────────────── -->
+    <section id="view-tenant" class="view" aria-label="Vista Arrendatario">
+
+      <div class="tenant-layout">
+
+        <!-- ── Selector de arrendatario ── -->
+        <aside>
+          <p class="section-title">Seleccionar arrendatario</p>
+
+          <!-- #tenant-selector: render.js pinta botones .tenant-selector-btn
+               dentro de este div. El activo lleva .tenant-selector-btn--active.
+               app.js escucha 'click' en los botones generados (delegación de eventos)
+               y llama RentalsRender.renderTenantAccount(tenant, today).
+               Estructura que render.js genera:
+                 <button class="tenant-selector-btn [tenant-selector-btn--active]"
+                         data-id="t-XXX" type="button">Nombre</button>
+          -->
+          <div id="tenant-selector" class="tenant-selector-list" role="list">
+            <!-- Botones de selección insertados por render.js -->
+          </div>
+        </aside>
+
+        <!-- ── Panel de estado de cuenta ── -->
+        <section aria-label="Estado de cuenta">
+          <p class="section-title">Estado de cuenta</p>
+
+          <!-- #tenant-account: render.js pinta el estado de cuenta del arrendatario
+               seleccionado. Cuando ninguno está seleccionado muestra mensaje vacío.
+               Estructura que render.js genera dentro de #tenant-account:
+                 .account-name          — Nombre completo
+                 .account-unit          — Unidad/departamento
+                 .account-status-row    — fila con .badge (badge--ok / badge--late)
+                 .months-list           — lista de .month-tag con mes adeudado
+                 .charge-row            — cargos únicos pendientes (si los hay)
+                 .total-row             — .total-label + .total-amount (USD)
+          -->
+          <div id="tenant-account" class="detail-panel detail-panel--empty" aria-live="polite" aria-atomic="true">
+            <span class="empty-state">Selecciona tu nombre para ver tu estado de cuenta</span>
+          </div>
+
+        </section>
+
+      </div><!-- /.tenant-layout -->
+
+    </section><!-- /#view-tenant -->
+
+  </main><!-- /.main-content -->
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCRIPTS — Orden de carga obligatorio (ARCHITECTURE.md §4):
+       data.js → store.js → calc.js → render.js → app.js
+
+       Scripts clásicos (no ES modules) para compatibilidad bajo
+       file:// sin servidor. Cada archivo expone un único global:
+         window.RentalsData    (data.js)
+         window.RentalsStore   (store.js)
+         window.RentalsCalc    (calc.js)
+         window.RentalsRender  (render.js)
+         window.RentalsApp     (app.js)
+       ═══════════════════════════════════════════════════════ -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

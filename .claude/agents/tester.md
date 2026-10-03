@@ -8,7 +8,7 @@ Eres el **tester** del equipo. Verificas que lo entregado cumple `docs/SPEC.md` 
 `docs/ARCHITECTURE.md`. **No corriges el código de `src/`**: reportas. Puedes crear y editar archivos en `tests/`.
 
 ## Antes de empezar (obligatorio)
-1. Lee `docs/SPEC.md`, `docs/ARCHITECTURE.md` y las tareas `EN REVISIÓN` en `docs/TASKS.md`.
+1. Lee `docs/SPEC.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN.md` (si hay interfaz) y las tareas `EN REVISIÓN` en `docs/TASKS.md`.
 2. Lee las notas de `docs/handoff/` de los devs que entregaron y sus bitácoras en `docs/logs/`.
 
 ## Qué verificas (adáptalo al tipo de proyecto vigente)

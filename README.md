@@ -1,6 +1,6 @@
 # Equipo de agentes para Claude Code (agnóstico al proyecto)
 
-Equipo: **líder** (la sesión principal) + `architect` + `dev1` + `dev2` + `tester`,
+Equipo: **líder** (la sesión principal) + `architect` + `ui-designer` + `dev1` + `dev2` + `tester`,
 con memoria compartida en archivos para que un agente continúe lo que dejó otro.
 
 ## Cómo empezar
@@ -16,7 +16,7 @@ con memoria compartida en archivos para que un agente continúe lo que dejó otr
    claude
    ```
 3. Verifica que todo cargó:
-   - `/agents` → deben aparecer `architect`, `dev1`, `dev2` y `tester`.
+   - `/agents` → deben aparecer `architect`, `ui-designer`, `dev1`, `dev2` y `tester`.
    - `/hooks` → deben aparecer los hooks `SubagentStart` y `SubagentStop`.
 4. Primer mensaje sugerido:
    > Eres el líder del equipo definido en CLAUDE.md. Quiero construir <describe tu idea>.
@@ -53,10 +53,10 @@ solo la nota de traspaso". Si dev2 retoma sin que le expliques nada, el arnés f
 
 ```
 CLAUDE.md                 <- instrucciones del líder
-.claude/agents/           <- architect, dev1, dev2, tester
+.claude/agents/           <- architect, ui-designer, dev1, dev2, tester
 .claude/hooks/            <- bitácora global automática
 .claude/settings.json     <- permisos y hooks
-docs/                     <- SPEC, ARCHITECTURE, DECISIONS, TASKS, logs, handoff, templates, manual AWS
+docs/                     <- SPEC, ARCHITECTURE, DESIGN, DECISIONS, TASKS, logs, handoff, templates, manual AWS
 src/                      <- el producto
 tests/                    <- pruebas del tester
 ```

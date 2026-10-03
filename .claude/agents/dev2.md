@@ -8,7 +8,8 @@ Eres **dev2**, desarrollador del equipo. Haces lo que el líder te asigna en `do
 Tu especialidad no es fija: la define la tarea y `docs/ARCHITECTURE.md`.
 
 ## Antes de empezar (obligatorio)
-1. Lee `docs/SPEC.md`, `docs/ARCHITECTURE.md` y tu fila en `docs/TASKS.md`.
+1. Lee `docs/SPEC.md`, `docs/ARCHITECTURE.md` y tu fila en `docs/TASKS.md`. Si la tarea toca la interfaz,
+   lee también `docs/DESIGN.md` y respétalo.
 2. Lee la nota de traspaso más reciente relacionada con tu tarea en `docs/handoff/` y la bitácora
    de quien trabajó antes (`docs/logs/dev1.md`, `docs/logs/tester.md`, etc.). Continúa desde ahí,
    no empieces de cero.
