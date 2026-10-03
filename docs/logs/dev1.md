@@ -156,3 +156,35 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - T-07: tester verifica visualmente que la fuente Inter carga correctamente sin conexión.
 
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev1-T06.md
+
+---
+
+## 2026-10-03 · T-07fix · Fix CSS especificidad: borde acento en hover sobre elementos activos
+
+- **Qué hice:**
+  Añadí 2 reglas CSS en `src/css/styles.css` para corregir el conflicto de especificidad
+  detectado por el tester en T-07:
+  1. `.card--active.card--clickable:hover { border-color: var(--color-accent); }` —
+     especificidad 0-3-0, supera a `.card--clickable:hover` (0-2-0), preservando el borde
+     azul acento cuando el cursor se sitúa sobre una tarjeta activa.
+  2. `.tenant-selector-btn--active:hover { border-color: var(--color-accent); }` —
+     mismo principio para el selector de arrendatario activo.
+  Cada regla se insertó inmediatamente después del bloque que le da origen
+  (`.card--active` y `.tenant-selector-btn--active` respectivamente).
+
+- **Archivos tocados:**
+  - `src/css/styles.css` (2 reglas añadidas, líneas 281-283 y 498-500)
+  - `docs/TASKS.md` (T-06 → LISTO, T-07 → LISTO)
+  - `docs/logs/dev1.md` (esta entrada)
+  - `docs/handoff/2026-10-03-dev1-T07fix.md` (creado)
+
+- **Decisiones y motivo:**
+  - Reglas de override por especificidad en lugar de `!important`: más predecible y más
+    fácil de sobreescribir si el diseño cambia.
+  - Ubicación junto a la regla de origen (no al final del archivo) para facilitar la
+    lectura y el mantenimiento: cada bloque activo tiene su override de hover a continuación.
+
+- **Pendiente / siguiente paso:**
+  - Ninguno. T-07 queda LISTO.
+
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev1-T07fix.md

@@ -277,6 +277,11 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+/* Fix especificidad: preserva borde acento al hacer hover sobre tarjeta activa */
+.card--active.card--clickable:hover {
+  border-color: var(--color-accent);
+}
+
 .card-header {
   display: flex;
   align-items: flex-start;
@@ -487,6 +492,11 @@ body {
   border-left-width: 3px;
   color: var(--color-accent);
   box-shadow: var(--shadow-md);
+}
+
+/* Fix especificidad: preserva borde acento al hacer hover sobre selector activo */
+.tenant-selector-btn--active:hover {
+  border-color: var(--color-accent);
 }
 
 /* ─────────────────────────────────────────────
