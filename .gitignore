@@ -1,0 +1,19 @@
+# Secretos y credenciales
+.env
+.env.*
+.aws/
+*.pem
+*.key
+
+# Dependencias y artefactos
+node_modules/
+dist/
+build/
+*.zip
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Configuración local de Claude Code (personal)
+.claude/settings.local.json

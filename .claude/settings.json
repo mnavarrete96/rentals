@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(aws *)",
+      "Bash(git push *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.aws/**)"
+    ]
+  },
+  "hooks": {
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-subagent.sh inicio"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-subagent.sh fin"
+          }
+        ]
+      }
+    ]
+  }
+}
