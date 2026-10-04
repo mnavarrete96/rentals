@@ -45,3 +45,34 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - `.env.example` NO pudo crearse: la regla de permisos del entorno bloquea escritura de archivos que coincidan con `.env.*`. El usuario debe crearlo manualmente (contenido en la nota de traspaso).
 - **Pendiente / siguiente paso:** B-02 (esquema Flyway + entidades JPA + repositorios + DataJpaTest). El usuario debe crear `.env.example` manualmente.
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B01.md
+
+---
+
+## 2026-10-03 · B-02 · Esquema Flyway + entidades JPA + repositorios + Testcontainers
+- **Qué hice:**
+  - Creé `V1__init_schema.sql` siguiendo ARCHITECTURE §5.1 exactamente (3 tablas + índice). No se añadió columna `status` porque el estado es calculado en runtime (ADR-006).
+  - Creé dominio: `TenantStatus.java` (enum), `YearMonthConverter.java` (@Converter autoApply), `Tenant.java` (con `@ElementCollection Set<YearMonth>` para paidMonths, per ARCHITECTURE §5.3), `OneTimeCharge.java` (@ManyToOne Tenant).
+  - Creé repositorios: `TenantRepository` y `OneTimeChargeRepository` (JpaRepository). No hay `PaidMonthRepository` porque paidMonths es @ElementCollection (sin entidad propia).
+  - Añadí Testcontainers al `build.gradle`. Descubrí que en Spring Boot 4.x los artefactos renombraron: `spring-boot-starter-data-jpa-test` (nuevo módulo), `testcontainers-junit-jupiter` y `testcontainers-postgresql` (Testcontainers 2.x), e imports actualizados a `org.springframework.boot.data.jpa.test.autoconfigure` y `org.springframework.boot.jdbc.test.autoconfigure`.
+  - Creé `TenantRepositoryTest.java` con 5 tests (guardar/recuperar tenant, deduplicación del Set<YearMonth>, múltiples meses pagados, cargo único con cascada, marcar cargo pagado).
+  - Creé `src/test/resources/application.properties` para deshabilitar Flyway en slice tests y usar `ddl-auto=create-drop`.
+  - Resultado: `./gradlew build` → BUILD SUCCESSFUL. `TenantRepositoryTest` → 5/5 tests en verde con PostgreSQL 16 en Docker.
+- **Archivos tocados:**
+  - `backend/src/main/resources/db/migration/V1__init_schema.sql` (creado)
+  - `backend/src/main/java/com/rentals/domain/TenantStatus.java` (creado)
+  - `backend/src/main/java/com/rentals/domain/YearMonthConverter.java` (creado)
+  - `backend/src/main/java/com/rentals/domain/Tenant.java` (creado)
+  - `backend/src/main/java/com/rentals/domain/OneTimeCharge.java` (creado)
+  - `backend/src/main/java/com/rentals/repository/TenantRepository.java` (creado)
+  - `backend/src/main/java/com/rentals/repository/OneTimeChargeRepository.java` (creado)
+  - `backend/build.gradle` (añadidas dependencias Testcontainers + spring-boot-starter-data-jpa-test)
+  - `backend/src/test/java/com/rentals/repository/TenantRepositoryTest.java` (creado)
+  - `backend/src/test/resources/application.properties` (creado)
+  - `docs/TASKS.md` (B-02 → EN REVISIÓN)
+- **Decisiones y motivo:**
+  - **paidMonths como @ElementCollection (no entidad PaidMonth):** La ARCHITECTURE §5.3 especifica `@ElementCollection Set<YearMonth>` para `paid_month`. El Set garantiza idempotencia en Java; la PK compuesta en la BD refuerza unicidad. La tarea del líder describía PaidMonth como entidad pero esto contradice ADR-006 (estado/historial calculado) y §5.3. Seguí la ARCHITECTURE.
+  - **Sin columna status en tenant:** ADR-006 prohíbe persistir estado calculado. El status se computa en `DebtCalculatorService` (tarea B-03).
+  - **SQL sigue ARCHITECTURE §5.1:** `BIGINT GENERATED ALWAYS AS IDENTITY`, `ON DELETE CASCADE`, `year_month CHECK`, `VARCHAR(120/40)`, `contact NOT NULL`, `monthly_amount >= 0`. La tarea describía un esquema diferente (BIGSERIAL, ON DELETE RESTRICT, etc.) que contradeciría la arquitectura.
+  - **Spring Boot 4.x:** Los starters y packages de test cambiaron vs 3.x. Documentado en la nota de traspaso para que los siguientes tasks (B-03, B-04, B-06) usen los imports correctos.
+- **Pendiente / siguiente paso:** B-03 (DebtCalculatorService + DebtSummary + pruebas de paridad). B-05 (semilla dev). B-06 (seguridad + V2__auth_schema.sql).
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B02.md

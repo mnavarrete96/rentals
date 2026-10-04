@@ -39,6 +39,13 @@ dependencies {
 
     // Tests
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    // Spring Boot 4.x split the JPA test slice into its own starter
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    // Testcontainers 2.x renamed the artifacts (junit-jupiter → testcontainers-junit-jupiter, etc.)
+    testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
