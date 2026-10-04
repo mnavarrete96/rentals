@@ -79,6 +79,64 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
 
 ---
 
+## 2026-10-03 · B-06 · Seguridad backend: JWT, auth endpoints, seed usuarios
+- **Qué hice:**
+  - Añadí starters `spring-boot-starter-security`, `spring-boot-starter-oauth2-resource-server` y `spring-security-test` a `build.gradle`.
+  - Creé `V2__auth_schema.sql` (tablas `app_user` y `refresh_token` siguiendo ARCHITECTURE §5.2 exactamente: constraints de rol↔tenant, lowercase username, ON DELETE RESTRICT/CASCADE).
+  - Actualicé `application.yml` con el bloque `rentals.auth.*` (jwt-secret, issuer, ttl, cookie-secure, bootstrap-admin). Actualicé `application-dev.yml` con `refresh-cookie-secure=false`.
+  - Nuevas entidades en `domain/`: `Role` (enum), `AppUser` (entidad, relación OneToOne opcional con Tenant), `RefreshToken` (entidad con isExpired/isRevoked/isValid).
+  - Nuevos repositorios: `AppUserRepository` (findByUsername, findByTenantId, existsByRole), `RefreshTokenRepository` (findByTokenHash, revokeAllByUser, deleteExpiredByUser).
+  - Capa `security/`: `AuthProperties` (ConfigurationProperties record), `JwtConfig` (beans JwtEncoder/JwtDecoder HS256 + JwtAuthenticationConverter con claim "role"), `JwtAccessTokenIssuer` (implementa AccessTokenIssuer), `AppUserDetailsService` (UserDetailsService), `ProblemDetailAuthHandlers` (401/403 como JSON problem), `SecurityConfig` (stateless, reglas por ruta/rol, DaoAuthenticationProvider, AuthenticationManager), `RefreshTokenService` (genera token opaco, SHA-256 hex en BD, rotación, revocación, reuse detection), `AdminBootstrapRunner` (crea ADMIN inicial si no existe).
+  - Interface `service/AccessTokenIssuer` y record `service/AuthResult` para que services no dependan de Nimbus.
+  - `service/UsernameTakenException`, `service/InvalidRefreshTokenException`.
+  - `service/UserAccountService` (crea usuarios ARRENDATARIO/ADMIN, reset de contraseña).
+  - `service/AuthService` (login vía AuthenticationManager, refresh con rotación, logout, changePassword).
+  - `web/RefreshCookieFactory` (crea/borra cookie HttpOnly SameSite=Strict), `web/AuthController` (4 endpoints A1-A4), `web/GlobalExceptionHandler` (ProblemDetail para BadCredentials, InvalidRefreshToken, UsernameTaken, MethodArgumentNotValid).
+  - `db/seed/V1001__dev_seed_users.sql`: 4 usuarios (1 ADMIN `admin`/`admin-dev-2024`, 3 ARRENDATARIO `ana.garcia`, `luis.lopez`, `pedro.vera` / `dev-password-123`). Hashes BCrypt strength 10 generados con el test `HashGenTest`.
+  - Tests: `AuthServiceTest` (10 tests, Mockito puro), `AuthControllerTest` (5 tests, @WebMvcTest Spring Boot 4.x + spring-security-test).
+  - `./gradlew build` → BUILD SUCCESSFUL, 31 tests en verde.
+- **Archivos tocados:**
+  - `backend/build.gradle` (starters security + oauth2-resource-server + spring-security-test)
+  - `backend/src/main/resources/application.yml` (bloque rentals.auth)
+  - `backend/src/main/resources/application-dev.yml` (refresh-cookie-secure=false)
+  - `backend/src/main/resources/db/migration/V2__auth_schema.sql` (creado)
+  - `backend/src/main/resources/db/seed/V1001__dev_seed_users.sql` (creado)
+  - `backend/src/main/java/com/rentals/domain/Role.java` (creado)
+  - `backend/src/main/java/com/rentals/domain/AppUser.java` (creado)
+  - `backend/src/main/java/com/rentals/domain/RefreshToken.java` (creado)
+  - `backend/src/main/java/com/rentals/repository/AppUserRepository.java` (creado)
+  - `backend/src/main/java/com/rentals/repository/RefreshTokenRepository.java` (creado)
+  - `backend/src/main/java/com/rentals/security/` (7 archivos creados)
+  - `backend/src/main/java/com/rentals/service/AccessTokenIssuer.java` (creado)
+  - `backend/src/main/java/com/rentals/service/AuthResult.java` (creado)
+  - `backend/src/main/java/com/rentals/service/AuthService.java` (creado)
+  - `backend/src/main/java/com/rentals/service/UserAccountService.java` (creado)
+  - `backend/src/main/java/com/rentals/service/UsernameTakenException.java` (creado)
+  - `backend/src/main/java/com/rentals/service/InvalidRefreshTokenException.java` (creado)
+  - `backend/src/main/java/com/rentals/web/AuthController.java` (creado)
+  - `backend/src/main/java/com/rentals/web/RefreshCookieFactory.java` (creado)
+  - `backend/src/main/java/com/rentals/web/GlobalExceptionHandler.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/LoginRequest.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/AuthResponse.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/ChangePasswordRequest.java` (creado)
+  - `backend/src/test/java/com/rentals/auth/AuthServiceTest.java` (creado)
+  - `backend/src/test/java/com/rentals/auth/AuthControllerTest.java` (creado)
+  - `backend/src/test/resources/application.properties` (añadido RENTALS_JWT_SECRET para tests)
+  - `docs/TASKS.md` (B-06 → EN REVISIÓN)
+  - `docs/logs/dev2.md` (esta entrada)
+  - `docs/handoff/2026-10-03-dev2-B06.md` (creado)
+- **Decisiones y motivo:**
+  - **Sin bloqueo por intentos (failedAttempts):** La tarea describía un contador en AppUser, pero ARCHITECTURE §13 lo clasifica como "D-6: abierta, YAGNI si se activa WAF rate-based". AppUser NO tiene `failedAttempts`/`lockedUntil`. AuthService delega en AuthenticationManager que ya maneja DisabledException. Si el usuario decide activar D-6, será un ADR y una migración V3. Se reporta al líder.
+  - **GlobalExceptionHandler en B-06:** La tarea original lo asignaba a B-04, pero es necesario para que `BadCredentialsException` del AuthController retorne 401 ProblemDetail (sin él, Spring lanza ServletException). Se creó un handler básico en B-06; B-04 puede extenderlo.
+  - **Spring Boot 4.x (Jackson 3.x):** Jackson 3.x usa `tools.jackson.databind` (no `com.fasterxml.jackson.databind`). Los tests no deben importar ObjectMapper de com.fasterxml.
+  - **Spring Boot 4.x (@MockitoBean vs @MockBean):** En Spring Framework 7.x, @MockBean fue reemplazado por `@MockitoBean` (`org.springframework.test.context.bean.override.mockito.MockitoBean`). Los tests usan la nueva anotación.
+  - **Spring Boot 4.x (@WebMvcTest):** El import correcto es `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`.
+  - **DaoAuthenticationProvider constructor:** En Spring Security 7.x, el constructor acepta `UserDetailsService` (no PasswordEncoder). Se usa `new DaoAuthenticationProvider(userDetailsService)` + `setPasswordEncoder(...)`.
+- **Pendiente / siguiente paso:** B-04 (TenantService, ChargeService, TenantController, ChargeController, PaidMonthController, MeController, TenantMapper, CreateTenantRequest con username+initialPassword, tests @WebMvcTest con matriz de roles).
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B06.md
+
+---
+
 ## 2026-10-03 · B-03 + B-05 · DebtCalculatorService + semilla dev SQL
 - **Qué hice:**
   - B-03: Creé `DebtSummary.java` (record inmutable: `List<YearMonth> monthsOwed`, `BigDecimal totalOwed`, `TenantStatus status`) en `service/`, siguiendo ARCHITECTURE §4.3 y la firma `calculate(Tenant, YearMonth)`.

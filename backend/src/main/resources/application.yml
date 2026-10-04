@@ -19,6 +19,15 @@ rentals:
   time-zone: ${RENTALS_TIME_ZONE:America/Guayaquil}
   cors:
     allowed-origins: ${RENTALS_CORS_ALLOWED_ORIGINS:}
+  auth:
+    jwt-secret: ${RENTALS_JWT_SECRET}
+    issuer: rentals-api
+    access-token-ttl: ${RENTALS_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${RENTALS_REFRESH_TOKEN_TTL:P7D}
+    refresh-cookie-secure: ${RENTALS_REFRESH_COOKIE_SECURE:true}
+    bootstrap-admin:
+      username: ${RENTALS_BOOTSTRAP_ADMIN_USERNAME:}
+      password: ${RENTALS_BOOTSTRAP_ADMIN_PASSWORD:}
 
 management:
   endpoints:

@@ -5,3 +5,7 @@ spring:
     password: ${DB_PASSWORD:rentals}
   flyway:
     locations: classpath:db/migration,classpath:db/seed
+
+rentals:
+  auth:
+    refresh-cookie-secure: false
