@@ -287,3 +287,59 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - `main.js` NO fue tocado: los stores se auto-configuran al inicializarse.
 
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F02.md
+
+---
+
+## 2026-10-03 · F-03 · Vista Admin completa
+
+- **Qué hice:**
+  Implementé la vista del administrador con todos sus componentes:
+  1. `components/admin/TenantList.vue`: lista de tarjetas clickeables. Props: `tenants`, `selectedId`.
+     Emite `select(tenant)`. Badge de estado AL_DIA/ATRASADO. Tarjeta activa con borde acento. Scroll
+     personalizado, max-height 420px (260px en móvil). `aria-pressed` en cada tarjeta.
+  2. `components/admin/TenantDetail.vue`: panel de detalle completo. Props: `tenant`, `loading`, `error`.
+     Muestra: nombre, unidad, contacto, día de pago, inicio, mensualidad, username, badge de estado.
+     Meses adeudados como month-tags con botón "Marcar pagado" (emite `markMonthPaid`). Cargos únicos
+     con botón "Marcar pagado" para los no pagados (emite `markChargePaid`). Botón "Añadir cargo"
+     (emite `addCharge`). Total adeudado con `formatUSD`. Estados: vacío, cargando, error.
+  3. `components/admin/TenantForm.vue`: formulario de registro. Campos: fullName, unit, contact,
+     paymentDay (1-28), startDate, monthlyAmount, username (patrón `^[a-z0-9._-]{3,50}$`), initialPassword
+     (con toggle mostrar/ocultar via SVG). Validación frontend antes del emit. Manejo visual de error 409
+     con ErrorBanner. Emite `submit(formData)` y `cancel`.
+  4. `components/admin/ChargeForm.vue`: formulario de cargo único. Campos: description, amount (>0).
+     Validación frontend. Emite `submit({description, amount})` y `cancel`.
+  5. `views/AdminView.vue`: orquestador. `onMounted` llama `tenantsStore.loadSummaries()`. Layout
+     grid 2 columnas (320px + 1fr). Sidebar: TenantList + botón "Nuevo". Panel derecho: TenantDetail
+     del arrendatario seleccionado. Modal overlay para TenantForm y ChargeForm. Maneja 409 (error 
+     "El nombre de usuario ya está en uso"). Tras crear tenant, lo selecciona automáticamente.
+     Responsive: columna única en móvil (< 640px), 280px+1fr en tablet (640-1023px).
+
+  Verificación: `npm run build` verde (63 KB JS). `npm run test` 21/21 verde.
+
+- **Archivos tocados:**
+  - `frontend/src/views/AdminView.vue` (implementado, reemplaza placeholder)
+  - `frontend/src/components/admin/TenantList.vue` (nuevo)
+  - `frontend/src/components/admin/TenantDetail.vue` (nuevo)
+  - `frontend/src/components/admin/TenantForm.vue` (nuevo)
+  - `frontend/src/components/admin/ChargeForm.vue` (nuevo)
+  - `docs/TASKS.md` (F-03 → EN REVISIÓN)
+  - `docs/logs/dev1.md` (esta entrada)
+  - `docs/handoff/2026-10-03-dev1-F03.md` (creado)
+
+- **Decisiones y motivo:**
+  - Solo AdminView habla con el store; componentes hijos reciben props y emiten eventos (SOLID / SRP).
+  - Modal overlay con `@click.self` para cerrar al clic en el fondo (sin librería de modal).
+  - Manejo del error 409 en AdminView (no en el store): el store ya lanza el error; AdminView detecta
+    `err.status === 409` y pasa el mensaje específico a TenantForm vía prop `error`.
+  - Toggle de contraseña con SVG inline (`aria-hidden="true"`): sin dependencia de iconos externos,
+    cumple la especificación de `docs/DESIGN.md` §5 (PasswordField).
+  - `usernameInvalid` y `passwordInvalid` como computeds para hint dinámico sin bloquear el submit
+    hasta que el usuario intente enviar (mejor UX).
+  - `box-sizing: border-box` en inputs para que padding no desborde el ancho del grid.
+
+- **Pendiente / siguiente paso:**
+  - F-04: Vista Arrendatario (TenantView.vue, AccountStatement con GET /api/me/tenant).
+  - F-05: LoginView, App.vue con restoreSession() y vista por rol, AppHeader, ChangePasswordForm.
+  - Integración real contra backend (F-02 + F-03 + F-04 + F-05 + B-04 + B-06).
+
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F03.md
