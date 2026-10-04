@@ -188,3 +188,43 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - Ninguno. T-07 queda LISTO.
 
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev1-T07fix.md
+
+---
+
+## 2026-10-03 · F-01 · Scaffold frontend Vue 3 + Vite
+
+- **Qué hice:**
+  Creé el scaffold completo de `frontend/` desde cero:
+  1. `package.json` con Vue 3.5, Pinia 2.2, Vite 6, Vitest 2, @vitejs/plugin-vue 5, jsdom 25.
+  2. `vite.config.js`: plugin Vue, proxy `/api → http://localhost:8080`, entorno jsdom para tests.
+  3. `index.html`: punto de entrada SPA en español, monta `#app`.
+  4. `src/main.js`: createApp + createPinia + imports de tokens.css y base.css.
+  5. `src/App.vue`: placeholder visible que confirma que el scaffold arranca.
+  6. `src/assets/styles/tokens.css`: todas las custom properties de la paleta v2 portadas desde `src/css/styles.css` (variables `--color-*`, `--space-*`, `--radius-*`, `--shadow-*`, `--font-*`, `--transition`).
+  7. `src/assets/styles/base.css`: reset, body, @font-face (rutas actualizadas a `../fonts/`) y `.sr-only`.
+  8. `src/assets/fonts/`: copiados `inter-v20-latin.woff2` e `inter-v20-latin-ext.woff2` desde `src/assets/fonts/` (sin mover, solo copiar).
+  9. `src/utils/format.js`: `formatUSD` (Intl.NumberFormat en-US currency) y `formatMonth` (toLocaleDateString es-EC, month long + year).
+  10. `src/api/http.js`, `src/api/authApi.js`, `src/api/tenantsApi.js`: placeholders con estructura mínima y comentarios TODO F-02.
+  11. `src/stores/auth.js`, `src/stores/tenants.js`: Pinia stores con estructura state/getters/actions mínimos y comentarios TODO F-02.
+  12. `src/views/LoginView.vue`, `AdminView.vue`, `TenantView.vue`: placeholders con comentarios de implementación futura.
+  13. `src/components/admin/`, `src/components/tenant/`, `src/components/common/`: directorios vacíos con `.gitkeep`.
+  14. Verificación: `npm install && npm run build` termina en verde (63 KB JS + 133 KB fuentes).
+
+- **Archivos tocados:**
+  - `frontend/` (todo el directorio, creado desde cero)
+  - `docs/TASKS.md` (F-01 → EN REVISIÓN)
+  - `docs/logs/dev1.md` (esta entrada)
+  - `docs/handoff/2026-10-03-dev1-F01.md` (creado)
+
+- **Decisiones y motivo:**
+  - `--font-body` añadida como custom property en tokens.css: permite que los componentes Vue la usen como `var(--font-body)` sin hardcodear el stack de fuentes.
+  - `base.css` separado de `tokens.css`: los tokens son valores puros; base.css es el único lugar que aplica estilos globales (fácil de sobreescribir en tests unitarios si fuera necesario).
+  - `formatMonth` usa `toLocaleDateString('es-EC', { month: 'long', year: 'numeric' })`: retorna el formato natural en español, p.ej. "enero de 2026". El locale es coherente con la zona horaria `America/Guayaquil` del proyecto.
+  - Stores y api con estructura mínima exportada: F-02 puede implementar sin cambiar los import paths.
+  - Sin `npm create vite` interactivo: estructura creada manualmente para control total y reproducibilidad.
+
+- **Pendiente / siguiente paso:**
+  - F-02: implementar `http.js` (Bearer + reintento), `authApi.js`, `tenantsApi.js`, `stores/auth.js` y `stores/tenants.js` + tests Vitest.
+  - B-01: scaffold del backend (en paralelo, mismo sprint).
+
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F01.md
