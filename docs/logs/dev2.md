@@ -31,3 +31,17 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - Validación básica en el submit (guard `if (!fullName || ...)`) además de los atributos `required` del HTML, para evitar objetos Tenant con datos vacíos.
 - **Pendiente / siguiente paso:** T-05 (tester) puede validar la app completa en el navegador abriendo `src/index.html`.
 - **Nota de traspaso:** docs/handoff/T04-dev2.md
+
+---
+
+## 2026-10-03 · B-01 · Scaffold backend Spring Boot
+- **Qué hice:** Creé el scaffold completo del backend en `backend/`. Configuré Gradle wrapper 9.8.0, Spring Boot 4.1.0, Java 25 toolchain. Creé los starters (webmvc, data-jpa, validation, actuator, flyway, postgresql). Implementé `ClockConfig` (bean `Clock` con zona configurable) y `CorsConfig` (WebMvcConfigurer que solo activa CORS si `rentals.cors.allowed-origins` tiene valor). Creé `application.yml` (sin secretos, solo referencias ${ENV_VAR}) y `application-dev.yml`. Creé los directorios `db/migration/` y `db/seed/` con `.gitkeep`. Creé `compose.yaml` en la raíz para PostgreSQL local. Actualicé `.gitignore` con entradas Java/Gradle. Verifiqué que `./gradlew build -x test` termina en verde.
+- **Archivos tocados:** `backend/` (todo), `compose.yaml`, `.gitignore`
+- **Decisiones y motivo:**
+  - Spring Boot 4.1.0: es la versión GA confirmada en Spring Initializr (4.0.x ya existe). Alineado con ARCHITECTURE §4.1.
+  - `spring-boot-starter-webmvc` en lugar de `spring-boot-starter-web`: Spring Boot 4.x renombró el starter; verificado con Spring Initializr.
+  - `spring-boot-starter-flyway` en lugar de `flyway-core`: Spring Boot 4.x introdujo un starter propio para Flyway; `flyway-database-postgresql` sigue siendo dependencia separada.
+  - Gradle 9.8.0: versión GA más reciente (verificado en services.gradle.org/versions/current).
+  - `.env.example` NO pudo crearse: la regla de permisos del entorno bloquea escritura de archivos que coincidan con `.env.*`. El usuario debe crearlo manualmente (contenido en la nota de traspaso).
+- **Pendiente / siguiente paso:** B-02 (esquema Flyway + entidades JPA + repositorios + DataJpaTest). El usuario debe crear `.env.example` manualmente.
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B01.md

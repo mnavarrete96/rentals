@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: rentals
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
+  flyway:
+    locations: classpath:db/migration
+
+rentals:
+  time-zone: ${RENTALS_TIME_ZONE:America/Guayaquil}
+  cors:
+    allowed-origins: ${RENTALS_CORS_ALLOWED_ORIGINS:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

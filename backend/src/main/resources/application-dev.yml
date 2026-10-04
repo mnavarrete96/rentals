@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/rentals}
+    username: ${DB_USERNAME:rentals}
+    password: ${DB_PASSWORD:rentals}
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed

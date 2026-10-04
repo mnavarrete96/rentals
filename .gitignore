@@ -17,3 +17,9 @@ Thumbs.db
 
 # Configuración local de Claude Code (personal)
 .claude/settings.local.json
+
+# Java / Gradle
+.gradle/
+.idea/
+*.iml
+out/

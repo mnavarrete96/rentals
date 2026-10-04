@@ -21,7 +21,7 @@ para que `dev1` y `dev2` no se pisen.
 
 | ID | Descripción | Responsable | Archivos propios | Depende de | Estado | Nota de traspaso |
 |---|---|---|---|---|---|---|
-| B-01 | Scaffold `backend/`: Gradle wrapper ≥9.1, Java 25 toolchain, Spring Boot, starters (web, data-jpa, validation, actuator), `compose.yaml`, `.env.example` (incluye `RENTALS_JWT_SECRET`, `RENTALS_BOOTSTRAP_ADMIN_*`, `RENTALS_REFRESH_COOKIE_SECURE`), `application.yml` sin secretos, `ClockConfig` (zona `America/Guayaquil`) | dev2 | `backend/`, `compose.yaml`, `.env.example` | — | EN CURSO | — |
+| B-01 | Scaffold `backend/`: Gradle wrapper ≥9.1, Java 25 toolchain, Spring Boot, starters (web, data-jpa, validation, actuator), `compose.yaml`, `.env.example` (incluye `RENTALS_JWT_SECRET`, `RENTALS_BOOTSTRAP_ADMIN_*`, `RENTALS_REFRESH_COOKIE_SECURE`), `application.yml` sin secretos, `ClockConfig` (zona `America/Guayaquil`) | dev2 | `backend/`, `compose.yaml`, `.env.example` | — | EN REVISIÓN | docs/handoff/2026-10-03-dev2-B01.md |
 | B-02 | Esquema PostgreSQL: `V1__init_schema.sql` (Flyway) + entidades JPA (Tenant, PaidMonth, OneTimeCharge) + `YearMonthConverter` + repositorios + `@DataJpaTest` con Testcontainers | dev2 | `backend/src/` | B-01 | TODO | — |
 | B-03 | `DebtCalculatorService` + `DebtSummary` + pruebas de paridad con los casos de `src/js/data.js` | dev2 | `backend/src/` | B-02 | TODO | — |
 | B-05 | Semilla dev: `V1000__dev_seed.sql` con los 3 arrendatarios del mock (solo perfil `dev`) | dev2 | `backend/src/` | B-02 | TODO | — |
@@ -31,6 +31,6 @@ para que `dev1` y `dev2` no se pisen.
 | F-02 | `api/http.js` (Bearer, reintento tras refresh, onAuthFailure), `api/authApi.js`, `api/tenantsApi.js`, `stores/auth.js`, `stores/tenants.js` + tests Vitest de http.js y stores/auth.js | dev1 | `frontend/src/` | F-01 | TODO | — |
 | F-03 | Vista Admin: lista de tarjetas, panel de detalle, marcar mes/cargo pagado, formulario de registro (con campos username + initialPassword, manejo de 409) | dev1 | `frontend/src/` | F-02 | TODO | — |
 | F-04 | Vista Arrendatario: muestra cuenta propia con `GET /api/me/tenant` (sin selector ni toggle) | dev1 | `frontend/src/` | F-02 | TODO | — |
-| U-01 | DESIGN.md: pantalla de login, AppHeader (usuario, "Cambiar contraseña", "Salir"), ChangePasswordForm, campos de credenciales en TenantForm; quitar toggle del diseño | ui-designer | `docs/DESIGN.md` | — | EN CURSO | — |
+| U-01 | DESIGN.md: pantalla de login, AppHeader (usuario, "Cambiar contraseña", "Salir"), ChangePasswordForm, campos de credenciales en TenantForm; quitar toggle del diseño | ui-designer | `docs/DESIGN.md` | — | EN REVISIÓN | docs/handoff/2026-10-03-ui-designer-U01.md |
 | F-05 | LoginView, App.vue con restoreSession() y vista por rol, AppHeader, ChangePasswordForm (aviso y vuelta al login) | dev1 | `frontend/src/` | F-02, U-01 | TODO | — |
 | T-v2 | Integración: RF-01 a RF-05 + checklist de autenticación (login, logout, cambio de contraseña, reset por admin, control de roles) sobre v2 completo | tester | — | B-04, B-06, F-03, F-04, F-05 | TODO | — |
