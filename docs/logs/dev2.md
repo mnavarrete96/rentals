@@ -76,3 +76,27 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - **Spring Boot 4.x:** Los starters y packages de test cambiaron vs 3.x. Documentado en la nota de traspaso para que los siguientes tasks (B-03, B-04, B-06) usen los imports correctos.
 - **Pendiente / siguiente paso:** B-03 (DebtCalculatorService + DebtSummary + pruebas de paridad). B-05 (semilla dev). B-06 (seguridad + V2__auth_schema.sql).
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B02.md
+
+---
+
+## 2026-10-03 · B-03 + B-05 · DebtCalculatorService + semilla dev SQL
+- **Qué hice:**
+  - B-03: Creé `DebtSummary.java` (record inmutable: `List<YearMonth> monthsOwed`, `BigDecimal totalOwed`, `TenantStatus status`) en `service/`, siguiendo ARCHITECTURE §4.3 y la firma `calculate(Tenant, YearMonth)`.
+  - B-03: Creé `DebtCalculatorService.java` (@Service, lógica pura sin repositorios ni reloj): genera la lista de meses desde startDate hasta currentMonth, descuenta paidMonths, suma cargos únicos no pagados y calcula totalOwed y status.
+  - B-03: Creé `DebtCalculatorServiceTest.java` con 11 tests JUnit 5 puros (sin Spring, sin BD): los 3 casos de paridad de data.js (t-001, t-002, t-003) + 8 bordes. Todos en verde.
+  - B-05: Creé `V1000__dev_seed.sql` con los 3 arrendatarios de data.js usando fechas absolutas (deterministas), DO $$ ... RETURNING id para evitar hardcodear IDs secuenciales, paid_months y one_time_charges incluidos.
+  - `./gradlew build` → BUILD SUCCESSFUL (11 nuevos tests DebtCalculatorService + 5 TenantRepository = 16 en verde).
+- **Archivos tocados:**
+  - `backend/src/main/java/com/rentals/service/DebtSummary.java` (creado)
+  - `backend/src/main/java/com/rentals/service/DebtCalculatorService.java` (creado)
+  - `backend/src/test/java/com/rentals/service/DebtCalculatorServiceTest.java` (creado)
+  - `backend/src/main/resources/db/seed/V1000__dev_seed.sql` (creado)
+  - `docs/TASKS.md` (B-03, B-05 → EN REVISIÓN)
+  - `docs/logs/dev2.md` (esta entrada)
+  - `docs/handoff/2026-10-03-dev2-B03.md` (creado)
+- **Decisiones y motivo:**
+  - Firma `calculate(Tenant, YearMonth)` (no LocalDate + paymentDay check): ARCHITECTURE §4.3 explicita que `paymentDay` NO afecta al conteo y especifica `YearMonth currentMonth`. La tarea del líder describía un comportamiento diferente; se siguió la ARCHITECTURE como documento autoritativo y se reporta en la nota de traspaso.
+  - `DebtSummary` en `service/` (no en `service/dto/`): ARCHITECTURE §3 lista `DebtSummary (record)` directamente bajo `service/`. No existe ninguna mención a `service/dto/` en la arquitectura.
+  - Seed con `DO $$ ... RETURNING id`: evita hardcodear IDs y es robusto ante cualquier valor inicial de la secuencia. Fechas absolutas (no `now()`) para determinismo en tests de paridad.
+- **Pendiente / siguiente paso:** B-06 (seguridad JWT, V2__auth_schema.sql, entidades AppUser/Role/RefreshToken, V1001__dev_seed_users.sql).
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B03.md
