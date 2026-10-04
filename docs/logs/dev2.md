@@ -137,6 +137,30 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
 
 ---
 
+## 2026-10-04 · B-06 (fix) · Bloqueo temporal por intentos fallidos de login (brute-force lockout)
+- **Qué hice:**
+  - Verifiqué que `V2__auth_schema.sql` NO tenía las columnas `failed_attempts` / `locked_until` en `app_user` (omitidas en la entrega anterior de B-06 por falta de ADR aprobado; ahora el líder lo aprueba explícitamente como D-6).
+  - Creé `V3__auth_add_lockout.sql`: `ALTER TABLE app_user ADD COLUMN failed_attempts SMALLINT NOT NULL DEFAULT 0, ADD COLUMN locked_until TIMESTAMPTZ`.
+  - Añadí a `AppUser.java`: campos `failedAttempts` (int, default 0) y `lockedUntil` (OffsetDateTime, nullable); métodos `isLocked(Clock)`, `incrementFailedAttempts(Clock)` (5 fallos → bloqueo 15 min, reset contador), `resetFailedAttempts()`.
+  - Refactoricé `AuthService.login()`: carga el usuario ANTES de llamar al `authenticationManager` (para verificar el bloqueo). Si el usuario no existe o está bloqueado → lanza `BadCredentialsException` genérica (sin enumerar usuarios). Si el `authenticationManager` falla → incrementa intentos + `save()` → lanza `BadCredentialsException`. Si tiene éxito → `resetFailedAttempts()` + `save()` + emite tokens.
+  - Actualicé `AuthServiceTest.java`: corregí los tests `login_withWrongPassword_throwsBadCredentials` y `login_withDisabledUser_throwsBadCredentials` (ahora también stubban `findByUsername` porque la búsqueda es previa al authManager). Añadí 3 tests nuevos de bloqueo: cuenta bloqueada, 5 fallos consecutivos bloquean, login exitoso tras fallos resetea el contador.
+  - `./gradlew build` → BUILD SUCCESSFUL, **34 tests en verde** (antes 31).
+- **Archivos tocados:**
+  - `backend/src/main/resources/db/migration/V3__auth_add_lockout.sql` (creado)
+  - `backend/src/main/java/com/rentals/domain/AppUser.java` (campos + métodos de bloqueo)
+  - `backend/src/main/java/com/rentals/service/AuthService.java` (lógica de bloqueo en login)
+  - `backend/src/test/java/com/rentals/auth/AuthServiceTest.java` (3 tests nuevos + 2 tests ajustados)
+  - `docs/TASKS.md` (B-06 → EN REVISIÓN)
+  - `docs/logs/dev2.md` (esta entrada)
+- **Decisiones y motivo:**
+  - **BadCredentialsException en vez de LockedException:** `LockedException` no está mapeada en `GlobalExceptionHandler` (que es de B-06, fuera de mis archivos propios en esta tarea). Para mantener el mismo 401 genérico sin tocar GlobalExceptionHandler, el servicio lanza `BadCredentialsException` tanto para contraseña incorrecta como para cuenta bloqueada. El mensaje es siempre "Usuario o contraseña incorrectos" (sin revelar el motivo real). Si en el futuro se quiere diferenciar el código de error para el cliente, GlobalExceptionHandler puede añadir `@ExceptionHandler(LockedException.class)` de forma independiente.
+  - **Búsqueda de usuario previa al authManager:** Necesaria para verificar `isLocked()` antes de la verificación de contraseña (que haría BCrypt). El usuario no encontrado devuelve el mismo error genérico. Diferencia de timing mínima, aceptable a esta escala (5-20 usuarios).
+  - **save() en login exitoso:** Se guarda siempre (aunque `failedAttempts` ya sea 0) para simplificar. El overhead es mínimo.
+- **Pendiente / siguiente paso:** B-04 (TenantService, ChargeService, TenantController, etc.).
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B06.md (existente; se actualiza in-situ al ser un fix del mismo alcance)
+
+---
+
 ## 2026-10-03 · B-03 + B-05 · DebtCalculatorService + semilla dev SQL
 - **Qué hice:**
   - B-03: Creé `DebtSummary.java` (record inmutable: `List<YearMonth> monthsOwed`, `BigDecimal totalOwed`, `TenantStatus status`) en `service/`, siguiendo ARCHITECTURE §4.3 y la firma `calculate(Tenant, YearMonth)`.

@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -93,6 +93,7 @@ class AuthServiceTest {
 
     @Test
     void login_withWrongPassword_throwsBadCredentials() {
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
         doThrow(new BadCredentialsException("bad"))
             .when(authenticationManager)
             .authenticate(any(UsernamePasswordAuthenticationToken.class));
@@ -104,6 +105,7 @@ class AuthServiceTest {
 
     @Test
     void login_withDisabledUser_throwsBadCredentials() {
+        when(userRepository.findByUsername("ana.garcia")).thenReturn(Optional.of(tenantUser));
         // AuthenticationManager throws for disabled users too
         doThrow(new org.springframework.security.authentication.DisabledException("disabled"))
             .when(authenticationManager)
@@ -112,6 +114,70 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login("ana.garcia", "dev-password-123"))
             .isInstanceOf(BadCredentialsException.class)
             .hasMessageContaining("incorrectos");
+    }
+
+    // ======= Lockout tests (D-6) =======
+
+    @Test
+    void login_withLockedAccount_throwsBadCredentials_withoutCallingAuthManager() {
+        // Lock the account by simulating 5 prior failures
+        for (int i = 0; i < 5; i++) {
+            adminUser.incrementFailedAttempts(clock);
+        }
+        assertThat(adminUser.isLocked(clock)).isTrue();
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+        assertThatThrownBy(() -> authService.login("admin", "admin-pass-123"))
+            .isInstanceOf(BadCredentialsException.class)
+            .hasMessageContaining("incorrectos");
+
+        // AuthenticationManager must NOT be called when account is locked
+        verify(authenticationManager, never()).authenticate(any());
+    }
+
+    @Test
+    void login_with5ConsecutiveFailures_locksAccount() {
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+        doThrow(new BadCredentialsException("bad"))
+            .when(authenticationManager)
+            .authenticate(any(UsernamePasswordAuthenticationToken.class));
+
+        // First 4 failures: account should not be locked yet
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authService.login("admin", "wrong"))
+                .isInstanceOf(BadCredentialsException.class);
+            assertThat(adminUser.isLocked(clock)).isFalse();
+            assertThat(adminUser.getFailedAttempts()).isEqualTo(i + 1);
+        }
+
+        // 5th failure: account must become locked and counter resets to 0
+        assertThatThrownBy(() -> authService.login("admin", "wrong"))
+            .isInstanceOf(BadCredentialsException.class);
+        assertThat(adminUser.isLocked(clock)).isTrue();
+        assertThat(adminUser.getFailedAttempts()).isEqualTo(0);
+        assertThat(adminUser.getLockedUntil()).isNotNull();
+        assertThat(adminUser.getLockedUntil()).isAfter(OffsetDateTime.now(clock));
+    }
+
+    @Test
+    void login_afterFailedAttempts_successfulLogin_resetsCounter() {
+        // Set up 3 prior failed attempts (not yet locked)
+        adminUser.incrementFailedAttempts(clock); // 1
+        adminUser.incrementFailedAttempts(clock); // 2
+        adminUser.incrementFailedAttempts(clock); // 3
+        assertThat(adminUser.getFailedAttempts()).isEqualTo(3);
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+        when(tokenIssuer.issue(adminUser)).thenReturn(new AccessTokenIssuer.IssuedToken("jwt-token", 900));
+        when(refreshTokenService.createToken(adminUser)).thenReturn("raw-refresh-token");
+
+        // Successful login must reset the counter
+        authService.login("admin", "admin-pass-123");
+
+        assertThat(adminUser.getFailedAttempts()).isEqualTo(0);
+        assertThat(adminUser.getLockedUntil()).isNull();
+        verify(userRepository).save(adminUser);
     }
 
     // ======= Refresh tests =======

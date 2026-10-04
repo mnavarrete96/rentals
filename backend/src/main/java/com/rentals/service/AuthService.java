@@ -20,6 +20,9 @@ import java.util.Optional;
  * Authentication service: login, refresh, logout, change password.
  * Returns AuthResult (which includes the raw refresh token for the cookie).
  * ARCHITECTURE §15.2, §15.3.
+ *
+ * Brute-force lockout (D-6): 5 consecutive failed logins lock the account for
+ * 15 minutes. The counter resets on every successful login.
  */
 @Service
 public class AuthService {
@@ -47,28 +50,47 @@ public class AuthService {
 
     /**
      * Login: authenticates credentials and issues tokens.
-     * Always returns the same generic 401 on failure (no user enumeration).
      *
-     * @throws BadCredentialsException on any failure (wrong password, locked, disabled)
+     * Always returns a generic 401 on failure (no user enumeration).
+     * Enforces brute-force lockout: 5 consecutive failures lock the account
+     * for 15 minutes (D-6). The counter resets on the first successful login.
+     *
+     * @throws BadCredentialsException on any failure (wrong password, locked,
+     *         disabled, or user not found) — all produce the same message.
      */
     @Transactional
     public AuthResult login(String username, String password) {
         String normalizedUsername = username.trim().toLowerCase();
 
+        // Load user first so we can check lockout before verifying the password.
+        // If user does not exist we still throw the same generic error (no enumeration).
+        AppUser user = userRepository.findByUsername(normalizedUsername)
+            .orElseThrow(() -> new BadCredentialsException("Usuario o contraseña incorrectos"));
+
+        // Reject immediately when the account is temporarily locked.
+        if (user.isLocked(clock)) {
+            throw new BadCredentialsException("Usuario o contraseña incorrectos");
+        }
+
+        // Delegate credential verification to Spring Security's AuthenticationManager.
         try {
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(normalizedUsername, password)
             );
         } catch (AuthenticationException e) {
+            // Record the failed attempt; lock if threshold is reached.
+            user.incrementFailedAttempts(clock);
+            userRepository.save(user);
             throw new BadCredentialsException("Usuario o contraseña incorrectos");
         }
-
-        AppUser user = userRepository.findByUsername(normalizedUsername)
-            .orElseThrow(() -> new BadCredentialsException("Usuario o contraseña incorrectos"));
 
         if (!user.isEnabled()) {
             throw new BadCredentialsException("Usuario o contraseña incorrectos");
         }
+
+        // Successful login: clear the failure counter and issue tokens.
+        user.resetFailedAttempts();
+        userRepository.save(user);
 
         AccessTokenIssuer.IssuedToken issued = tokenIssuer.issue(user);
         String refreshToken = refreshTokenService.createToken(user);
