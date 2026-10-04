@@ -343,3 +343,59 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - Integración real contra backend (F-02 + F-03 + F-04 + F-05 + B-04 + B-06).
 
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F03.md
+
+---
+
+## 2026-10-03 · F-04, F-05 · Vista Arrendatario + Login + App.vue orquestador
+
+- **Qué hice:**
+  Implementé F-04 y F-05 completamente:
+
+  **F-04 (Vista Arrendatario):**
+  - `components/tenant/AccountStatement.vue`: muestra nombre, unidad, badge AL_DIA/ATRASADO,
+    meses adeudados como chips, cargos únicos no pagados con monto, total adeudado con formatUSD.
+    Si total=0: mensaje "Estás al día". Estados de carga y error incluidos.
+  - `views/TenantView.vue`: llama `tenantsStore.loadMyAccount()` en `onMounted`. Incluye
+    AppHeader y AccountStatement. Modal ChangePasswordForm disponible desde el header.
+
+  **F-05 (Login + App + Header + ChangePassword):**
+  - `components/common/AppHeader.vue`: sticky 56px (48px móvil), logo terracota izquierda,
+    username + botones "Cambiar contraseña" / "Salir" derecha. Emite `changePassword`.
+    Botón "Salir" llama `auth.logout()` directamente.
+  - `components/common/ChangePasswordForm.vue`: modal overlay con 3 campos PasswordField.
+    Validación frontend (contraseñas coinciden, min 10 chars). Error 401 → "Contraseña actual
+    incorrecta". Éxito → mensaje + cierra tras 2 s. Focus trap + Escape. `role="dialog"`.
+  - `views/LoginView.vue`: tarjeta max-width 400px centrada. Campo username, PasswordField
+    contraseña con toggle. Error genérico "Usuario o contraseña incorrectos". Loading state.
+  - `views/AdminView.vue`: añadidos `AppHeader` + `ChangePasswordForm` (modal).
+  - `App.vue`: orquestador completo. `onMounted → auth.restoreSession()`. Elige vista:
+    unknown → spinner, anonymous → LoginView, isAdmin → AdminView, else → TenantView.
+
+  `npm run build` → verde (109 KB JS). `npm run test` → 21/21 verde.
+
+- **Archivos tocados:**
+  - `frontend/src/components/tenant/AccountStatement.vue` (nuevo)
+  - `frontend/src/views/TenantView.vue` (reemplazado placeholder)
+  - `frontend/src/components/common/AppHeader.vue` (nuevo)
+  - `frontend/src/components/common/ChangePasswordForm.vue` (nuevo)
+  - `frontend/src/views/LoginView.vue` (reemplazado placeholder)
+  - `frontend/src/views/AdminView.vue` (añadidos AppHeader + ChangePasswordForm)
+  - `frontend/src/App.vue` (reemplazado placeholder — orquestador completo)
+  - `docs/TASKS.md` (F-04 y F-05 → EN REVISIÓN)
+
+- **Decisiones y motivo:**
+  - AppHeader se incluye dentro de AdminView y TenantView (no en App.vue global). Coherente
+    con SRP: cada vista gestiona su propio layout y puede pasar props/emitir eventos localmente.
+  - ChangePasswordForm en AdminView y TenantView (no global en App.vue): mismo motivo que AppHeader.
+  - AdminView necesitó modificación (añadir AppHeader/ChangePasswordForm) — no es un archivo
+    "propio" estricto de F-04/F-05 pero es el único lugar donde encaja sin romper SRP ni la
+    arquitectura. Se anota aquí para que el tester lo revise.
+  - Focus trap implementado sin librería externa (JS puro con querySelectorAll sobre el modal).
+  - `auth.logout()` se llama directamente desde AppHeader (no emite evento): el header ya importa
+    el store, y el logout no necesita que el padre (AdminView/TenantView) lo intercepte.
+
+- **Pendiente / siguiente paso:**
+  - Integración real contra backend cuando B-04 + B-06 estén listos (tarea T-v2).
+  - Verificación del tester (checklist §15.9 ARCHITECTURE.md).
+
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F04F05.md

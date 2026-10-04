@@ -11,6 +11,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useTenantsStore } from '../stores/tenants.js'
 
+import AppHeader from '../components/common/AppHeader.vue'
+import ChangePasswordForm from '../components/common/ChangePasswordForm.vue'
 import TenantList from '../components/admin/TenantList.vue'
 import TenantDetail from '../components/admin/TenantDetail.vue'
 import TenantForm from '../components/admin/TenantForm.vue'
@@ -19,6 +21,7 @@ import ChargeForm from '../components/admin/ChargeForm.vue'
 const tenantsStore = useTenantsStore()
 
 // ── Estado local de la UI ────────────────────────────────────────────────────
+const showChangePassword = ref(false)
 const showTenantForm = ref(false)
 const showChargeForm = ref(false)
 const tenantFormError = ref(null)
@@ -110,9 +113,19 @@ async function handleAddCharge(chargeData) {
     chargeFormLoading.value = false
   }
 }
+
+function openChangePassword() {
+  showChangePassword.value = true
+}
+
+function closeChangePassword() {
+  showChangePassword.value = false
+}
 </script>
 
 <template>
+  <div class="admin-page">
+  <AppHeader @change-password="openChangePassword" />
   <main class="main-content">
     <!-- Estado de carga de la lista -->
     <div
@@ -210,9 +223,23 @@ async function handleAddCharge(chargeData) {
       </div>
     </div>
   </main>
+
+  <!-- Modal: Cambiar contraseña -->
+  <ChangePasswordForm
+    v-if="showChangePassword"
+    @close="closeChangePassword"
+  />
+  </div>
 </template>
 
 <style scoped>
+.admin-page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
