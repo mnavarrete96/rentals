@@ -228,3 +228,62 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - B-01: scaffold del backend (en paralelo, mismo sprint).
 
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F01.md
+
+---
+
+## 2026-10-03 · F-02 · Capa HTTP + stores Pinia con autenticación JWT
+
+- **Qué hice:**
+  Implementé la capa completa de comunicación HTTP y los stores de Pinia:
+  1. `api/http.js`: `apiFetch(path, options)` con Bearer header, reintento único tras 401,
+     `configureAuth({ getAccessToken, refreshAccessToken, onAuthFailure })` (DIP, sin importar el store),
+     `ApiError extends Error` con `status`, `body`, `title`, `detail`, `errors`. Función `safeJson` para
+     respuestas sin body. Respuesta 204 devuelve null.
+  2. `api/authApi.js`: `login`, `refresh`, `logout`, `changePassword` sobre `apiFetch`.
+  3. `api/tenantsApi.js`: `listTenants`, `getTenant`, `createTenant`, `addCharge`, `markChargePaid`,
+     `markMonthPaid`, `unmarkMonth`, `getMyTenant` sobre `apiFetch`.
+  4. `stores/auth.js`: reescrito con setup API (Composition). Estado: `status`, `user`, `accessToken`,
+     `refreshPromise`. Getters: `isAdmin`, `isTenant`, `isAuthenticated`. Acciones: `restoreSession`,
+     `login`, `refreshAccessToken` (deduplicación con `refreshPromise`), `logout`, `changePassword`,
+     `clearSession`. Llama `configureAuth` durante la inicialización del store (DIP).
+     `clearSession` resetea el store de tenants con importación dinámica (evita circular).
+  5. `stores/tenants.js`: reescrito con setup API. Todas las acciones admin (`loadSummaries`, `loadDetail`,
+     `selectTenant`, `createTenant`, `addCharge`, `markChargePaid`, `markMonthPaid`, `unmarkMonth`)
+     y arrendatario (`loadMyAccount`). `reset()` llamado por `clearSession`.
+  6. Tests: `src/test/http.test.js` (8 tests) y `src/test/auth.store.test.js` (13 tests). Total: 21 tests verdes.
+  
+  Verificación: `npm run test` → 21/21 verde. `npm run build` → verde (63 KB JS).
+
+- **Archivos tocados:**
+  - `frontend/src/api/http.js` (implementado)
+  - `frontend/src/api/authApi.js` (implementado)
+  - `frontend/src/api/tenantsApi.js` (implementado)
+  - `frontend/src/stores/auth.js` (implementado, reescrito con setup API)
+  - `frontend/src/stores/tenants.js` (implementado, reescrito con setup API)
+  - `frontend/src/test/http.test.js` (creado, 8 tests)
+  - `frontend/src/test/auth.store.test.js` (creado, 13 tests)
+  - `docs/TASKS.md` (F-02 → EN REVISIÓN)
+  - `docs/logs/dev1.md` (esta entrada)
+  - `docs/handoff/2026-10-03-dev1-F02.md` (creado)
+
+- **Decisiones y motivo:**
+  - Setup API (Composition) en lugar de Options API para los stores: permite llamar `configureAuth`
+    durante la inicialización del store sin side effects en el módulo, resolviendo la inyección de
+    dependencias (DIP) sin necesidad de modificar `main.js`.
+  - `configureAuth({ getAccessToken, refreshAccessToken, onAuthFailure })` con 3 campos: la arquitectura
+    §7 lo especifica así y es necesario para que `refreshAccessToken` actualice el store y `_getToken()`
+    devuelva el token nuevo en el reintento.
+  - Importación dinámica de `stores/tenants.js` en `clearSession`: evita dependencia circular
+    (`auth → tenants → tenantsApi → http → auth`).
+  - `refreshPromise` en el store (no en http.js): centraliza la deduplicación donde viven los datos.
+  - Mock de `authApi` en tests con `vi.mock`: permite testear el store sin fetch real.
+  - Tests de localStorage con `vi.spyOn(Storage.prototype, 'setItem')`: verifica que el token
+    no se persiste en storage (req. de seguridad ADR-009).
+
+- **Pendiente / siguiente paso:**
+  - F-03: Vista Admin (TenantList, TenantCard, TenantDetail, TenantForm con username/initialPassword, manejo de 409).
+  - F-04: Vista Arrendatario (AccountStatement, loadMyAccount).
+  - F-05: LoginView, App.vue con restoreSession() y vista por rol, AppHeader, ChangePasswordForm.
+  - `main.js` NO fue tocado: los stores se auto-configuran al inicializarse.
+
+- **Nota de traspaso:** docs/handoff/2026-10-03-dev1-F02.md
