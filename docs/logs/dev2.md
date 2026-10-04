@@ -182,3 +182,41 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
   - Seed con `DO $$ ... RETURNING id`: evita hardcodear IDs y es robusto ante cualquier valor inicial de la secuencia. Fechas absolutas (no `now()`) para determinismo en tests de paridad.
 - **Pendiente / siguiente paso:** B-06 (seguridad JWT, V2__auth_schema.sql, entidades AppUser/Role/RefreshToken, V1001__dev_seed_users.sql).
 - **Nota de traspaso:** docs/handoff/2026-10-03-dev2-B03.md
+
+---
+
+## 2026-10-04 · B-04 · TenantService + TenantController + MeController + DTOs + tests
+
+- **Qué hice:**
+  - DTOs en `web/dto/`: `TenantSummaryDto`, `TenantDetailDto`, `OneTimeChargeDto`, `CreateTenantRequest` (con `@NotBlank`, `@Pattern`, `@Min`/`@Max`, `@PositiveOrZero`, `@Digits`), `CreateChargeRequest`.
+  - `TenantNotFoundException` (RuntimeException) en `service/`.
+  - `TenantService` @Transactional con 8 métodos: `listSummaries`, `getDetail`, `create` (crea tenant + usuario ARRENDATARIO en misma transacción, lanza `UsernameTakenException` si duplicado), `markMonthPaid`, `unmarkMonthPaid`, `addCharge`, `markChargePaid`, `getMyTenant`.
+  - `TenantController`: 7 endpoints REST (@RestController, /api/tenants/**). `{yearMonth}` aceptado como String y parseado con `YearMonth.parse()` → `IllegalArgumentException` → 400.
+  - `MeController`: GET /api/me/tenant, lee `tenantId` del JWT claim via `@AuthenticationPrincipal Jwt`.
+  - `GlobalExceptionHandler` extendido con handlers para `TenantNotFoundException` (404) e `IllegalArgumentException` (400).
+  - `TenantControllerTest` (16 tests) + `MeControllerTest` (3 tests): `@WebMvcTest` con `@TestConfiguration @EnableWebSecurity` propio (ver decisión crítica abajo).
+  - `./gradlew build` → BUILD SUCCESSFUL, **53 tests en verde** (antes 34).
+
+- **Archivos tocados:**
+  - `backend/src/main/java/com/rentals/web/dto/TenantSummaryDto.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/TenantDetailDto.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/OneTimeChargeDto.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/CreateTenantRequest.java` (creado)
+  - `backend/src/main/java/com/rentals/web/dto/CreateChargeRequest.java` (creado)
+  - `backend/src/main/java/com/rentals/service/TenantNotFoundException.java` (creado)
+  - `backend/src/main/java/com/rentals/service/TenantService.java` (creado)
+  - `backend/src/main/java/com/rentals/web/TenantController.java` (creado)
+  - `backend/src/main/java/com/rentals/web/MeController.java` (creado)
+  - `backend/src/main/java/com/rentals/web/GlobalExceptionHandler.java` (extendido con 2 handlers)
+  - `backend/src/test/java/com/rentals/web/TenantControllerTest.java` (creado)
+  - `backend/src/test/java/com/rentals/web/MeControllerTest.java` (creado)
+  - `docs/TASKS.md` (B-04 → EN REVISIÓN)
+
+- **Decisiones y motivo:**
+  - **@TestConfiguration @EnableWebSecurity en tests (decisión crítica):** En Spring Boot 4.x, `WebMvcTypeExcludeFilter.KNOWN_INCLUDES` solo incluye `@Controller`, `@ControllerAdvice`, `Filter`, `Converter`, etc. `SecurityConfig` (`@Configuration @EnableWebSecurity`) y `JwtConfig` (`@Configuration`) NO están en la lista → son excluidos del slice de `@WebMvcTest`. Sin `SecurityConfig`, no hay `@EnableWebSecurity`, no hay `HttpSecurity`, y `OAuth2ResourceServerWebSecurityAutoConfiguration.jwtSecurityFilterChain(HttpSecurity)` falla (NoSuchBeanDefinition). Solución: cada test de controller con `@TestConfiguration @EnableWebSecurity` propio que define un `SecurityFilterChain` mínimo con las reglas relevantes para ese controller. Esto registra el bean ANTES de que `@ConditionalOnDefaultWebSecurity` lo evalúe → la autoconfiguracion es saltada → el filtro propio queda activo. `@MockitoBean JwtDecoder` satisface la config de `oauth2ResourceServer.jwt()`.
+  - **`@AuthenticationPrincipal Jwt` en MeController:** `jwt().jwt(j -> j.tokenValue("test-token").claim("tenantId", 1L))` — necesario incluir `tokenValue` explícito en Spring Security 7.x porque el builder requiere `tokenValue` no vacío.
+  - **DTOs en `web/dto/`:** ARCHITECTURE §3 lo especifica. La tarea del líder mencionaba `service/dto/` pero la arquitectura es la fuente de verdad.
+  - **`TenantDetailDto` con campos planos:** ARCHITECTURE §6.3 especifica `paidMonths`, `oneTimeCharges`, `monthsOwed`, `totalOwed`, `status` al nivel raíz (no objeto `debt` anidado).
+
+- **Pendiente / siguiente paso:** Ninguno. BUILD SUCCESSFUL con 53 tests.
+- **Nota de traspaso:** docs/handoff/2026-10-04-dev2-B04.md

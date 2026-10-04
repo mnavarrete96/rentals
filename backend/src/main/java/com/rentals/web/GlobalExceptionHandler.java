@@ -1,6 +1,7 @@
 package com.rentals.web;
 
 import com.rentals.service.InvalidRefreshTokenException;
+import com.rentals.service.TenantNotFoundException;
 import com.rentals.service.UsernameTakenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -56,6 +57,30 @@ public class GlobalExceptionHandler {
         problem.setType(URI.create("about:blank"));
         problem.setTitle("Conflict");
         problem.setDetail("El nombre de usuario ya está en uso");
+        return problem;
+    }
+
+    /**
+     * 404 for tenant (or tenant-owned resource) not found.
+     */
+    @ExceptionHandler(TenantNotFoundException.class)
+    public ProblemDetail handleTenantNotFound(TenantNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setType(URI.create("about:blank"));
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
+    /**
+     * 400 for invalid path variable format (e.g. malformed YYYY-MM month).
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setType(URI.create("about:blank"));
+        problem.setTitle("Bad Request");
+        problem.setDetail(ex.getMessage());
         return problem;
     }
 
