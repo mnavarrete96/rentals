@@ -135,3 +135,73 @@ Entradas más recientes al final. Formato en `docs/templates/log-entry.md`.
     badges sobre fondos blancos y acento terracota en estado activo).
 
 - **Nota de traspaso:** docs/handoff/2026-10-03-ui-designer-v2.md
+
+---
+
+## 2026-10-03 · U-01 · Diseño de pantallas de autenticación (v2)
+
+- **Qué hice:**
+  Leí DESIGN.md vigente, ARCHITECTURE.md §15.7 (LoginView, AppHeader, ChangePasswordForm, TenantForm
+  con credenciales), SPEC.md §11, handoff del architect v2 y la bitácora propia anterior.
+
+  Cambios aplicados en docs/DESIGN.md:
+
+  1. **Eliminación del toggle Admin/Arrendatario:** marqué la sección `.mode-toggle` como
+     "ELIMINADO EN v2" con nota explicativa. La vista la determina el rol del JWT. Conservé la
+     especificación histórica (v1) como referencia sin aplicar en v2.
+
+  2. **Nuevos componentes:** añadí una subsección "NUEVOS COMPONENTES v2" dentro de §5 con:
+     - `.error-banner`: wrapper reutilizable de error con colores danger, role alert y aria-live.
+     - `.password-field`: input de contraseña con botón mostrar/ocultar, posicionado absolutamente,
+       con aria-label dinámico.
+     - `.app-header`: sticky, 56px/48px, flex space-between; nombre de app a la izquierda, username
+       + botones "Cambiar contraseña" y "Salir" a la derecha; nuevo `.btn-header` de tamaño menor que
+       los botones de formulario.
+     - `.login-view` / `.login-card`: centrado min-height 100vh, card max-width 400px, layout flex
+       column con gap --space-md; estados del botón (normal, loading, error); sin enlace de
+       recuperación; responsive identico en 375px.
+     - `.modal-overlay` / `.modal` para ChangePasswordForm: overlay rgba(0,0,0,0.42), max-width 440px,
+       focus trap, Escape cierra, aria-modal; campos "Contraseña actual", "Nueva contraseña" (hint
+       mínimo 10 caracteres), "Confirmar nueva contraseña"; 5 estados documentados (normal, loading,
+       error contraseña incorrecta, error confirmación, éxito con redirección).
+     - Actualización de `.form-panel` para los campos nuevos del TenantForm: campo "Nombre de usuario"
+       con hint de patrón y validación inline en el hint, campo "Contraseña inicial" con PasswordField
+       y aviso de cambio al primer ingreso, ErrorBanner 409 con role alert.
+
+  3. **Sección 6 actualizada:** añadí LoginView como pantalla nueva (sin header, sin toggle),
+     actualicé AdminView y TenantView para mostrar AppHeader y la presencia del ChangePasswordForm
+     como modal. TenantView simplificada (sin selector). Añadí estado de carga inicial.
+
+  4. **Sección 7 actualizada:** dividí accesibilidad en general y v2-específica. Añadí autocomplete,
+     aria labels para contraseñas, trampa de foco del modal, role="status" en el loader.
+
+  5. **Historial de cambios:** entrada 2026-10-03 "Incorporación de autenticación JWT en v2".
+
+- **Archivos tocados:**
+  - `docs/DESIGN.md`
+  - `docs/logs/ui-designer.md`
+  - `docs/handoff/2026-10-03-ui-designer-U01.md`
+
+- **Decisiones y motivo:**
+  - Modal para ChangePasswordForm (vs. panel inline): el modal permite cambiar la contraseña desde
+    cualquier vista sin perder el contexto de trabajo; es un flujo corto y puntual que no justifica
+    una ruta nueva.
+  - `.btn-header` distinto de `.btn-secondary`: en el header los botones son más pequeños (13px, 6px
+    12px de padding) para no competir visualmente con el contenido de la vista principal.
+  - ErrorBanner como componente reutilizable: las tres pantallas con errores (login, cambio de
+    contraseña, TenantForm 409) comparten el mismo patrón visual y de accesibilidad.
+  - Sin enlace "Olvidé mi contraseña": no existe en v2 por diseño (SPEC §15.5).
+  - Validación de confirmación de contraseña solo en frontend (no backend): coherente con
+    ARCHITECTURE §6.2 que no define un campo de confirmación en el DTO.
+  - Hint de username como validación inline (cambia de color en error) en lugar de mensaje debajo:
+    ocupa menos espacio y es más inmediato para el usuario.
+  - TenantView sin sidebar (solo el panel de cuenta): el arrendatario ve solo su propia cuenta
+    (GET /api/me/tenant), no necesita ningún selector.
+
+- **Pendiente / siguiente paso:**
+  - Dev1 (F-05) implementa LoginView, AppHeader y ChangePasswordForm según esta guía.
+  - Dev1 (F-03) añade los campos de credenciales al TenantForm.
+  - No quedan decisiones de diseño bloqueantes para el líder, pero si dev1 detecta que algún valor
+    no es implementable con Vue 3 + Vite, debe notificar por handoff para ajustar DESIGN.md.
+
+- **Nota de traspaso:** docs/handoff/2026-10-03-ui-designer-U01.md

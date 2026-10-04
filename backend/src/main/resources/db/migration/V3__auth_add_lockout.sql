@@ -3,5 +3,5 @@
 -- locked_until: if non-null and in the future, login is denied regardless of password
 
 ALTER TABLE app_user
-    ADD COLUMN failed_attempts SMALLINT NOT NULL DEFAULT 0,
+    ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0,
     ADD COLUMN locked_until    TIMESTAMPTZ;

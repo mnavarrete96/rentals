@@ -7,7 +7,7 @@ CREATE TABLE tenant (
     full_name       VARCHAR(120)  NOT NULL,
     unit            VARCHAR(40)   NOT NULL,
     contact         VARCHAR(120)  NOT NULL,
-    payment_day     SMALLINT      NOT NULL CHECK (payment_day BETWEEN 1 AND 28),
+    payment_day     INTEGER       NOT NULL CHECK (payment_day BETWEEN 1 AND 28),
     start_date      DATE          NOT NULL,
     monthly_amount  NUMERIC(10,2) NOT NULL CHECK (monthly_amount >= 0),
     created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
@@ -15,7 +15,7 @@ CREATE TABLE tenant (
 
 CREATE TABLE paid_month (
     tenant_id   BIGINT  NOT NULL REFERENCES tenant(id) ON DELETE CASCADE,
-    year_month  CHAR(7) NOT NULL CHECK (year_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
+    year_month  VARCHAR(7) NOT NULL CHECK (year_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
     PRIMARY KEY (tenant_id, year_month)
 );
 

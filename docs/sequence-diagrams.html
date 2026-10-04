@@ -1,0 +1,688 @@
+<title>Diagramas de Secuencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* layout: sticky tab nav + scrollable diagram cards — warm-slate technical reference */
+  :root {
+    --bg: #f4f2ef;
+    --surface: #ffffff;
+    --surface-2: #eceae6;
+    --fg: #1c1917;
+    --fg-2: #78716c;
+    --accent: #1a4f80;
+    --accent-dim: #d8eaf5;
+    --border: #dedad6;
+    --tag-auth-bg: #ddeaf6; --tag-auth-fg: #1a4f80;
+    --tag-admin-bg: #fce8d4; --tag-admin-fg: #7a3a14;
+    --tag-tenant-bg: #d8f2e6; --tag-tenant-fg: #175c34;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #100e0c;
+      --surface: #1a1816;
+      --surface-2: #242018;
+      --fg: #f0ede9;
+      --fg-2: #9a9088;
+      --accent: #5aaee0;
+      --accent-dim: #12243a;
+      --border: #2a2620;
+      --tag-auth-bg: #112234; --tag-auth-fg: #70c0e8;
+      --tag-admin-bg: #271408; --tag-admin-fg: #d88055;
+      --tag-tenant-bg: #0a2018; --tag-tenant-fg: #52c880;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #100e0c;
+    --surface: #1a1816;
+    --surface-2: #242018;
+    --fg: #f0ede9;
+    --fg-2: #9a9088;
+    --accent: #5aaee0;
+    --accent-dim: #12243a;
+    --border: #2a2620;
+    --tag-auth-bg: #112234; --tag-auth-fg: #70c0e8;
+    --tag-admin-bg: #271408; --tag-admin-fg: #d88055;
+    --tag-tenant-bg: #0a2018; --tag-tenant-fg: #52c880;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    padding-inline: 16px;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    padding-block: 32px 20px;
+    max-width: 920px;
+    margin-inline: auto;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  .page-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin-bottom: 6px;
+  }
+  .page-header p {
+    color: var(--fg-2);
+    font-size: 14px;
+  }
+
+  /* ── Sticky tab nav ── */
+  .tab-nav {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    z-index: 20;
+    padding-inline: 0;
+  }
+  .tab-nav-inner {
+    display: flex;
+    max-width: 920px;
+    margin-inline: auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-nav-inner::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-2);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.14s, border-color 0.14s;
+    font-family: inherit;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--fg); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-count {
+    background: var(--surface-2);
+    color: var(--fg-2);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tab-btn.active .tab-count { background: var(--accent-dim); color: var(--accent); }
+
+  /* ── Tab content ── */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; padding-block: 24px 56px; }
+  .section-inner {
+    max-width: 920px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── Diagram card ── */
+  .diagram-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-id {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-2);
+    padding-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-meta h2 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin-bottom: 4px;
+  }
+  .card-meta p { font-size: 13px; color: var(--fg-2); line-height: 1.55; }
+  .card-tag {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    margin-top: 2px;
+  }
+  .tag-auth   { background: var(--tag-auth-bg);   color: var(--tag-auth-fg);   }
+  .tag-admin  { background: var(--tag-admin-bg);  color: var(--tag-admin-fg);  }
+  .tag-tenant { background: var(--tag-tenant-bg); color: var(--tag-tenant-fg); }
+
+  .card-body { padding: 20px 22px; overflow-x: auto; }
+  .card-body pre.mermaid { min-width: 480px; }
+
+  .card-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 10px 22px;
+    background: var(--accent-dim);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--accent);
+    line-height: 1.5;
+  }
+  .card-note::before {
+    content: "ℹ";
+    font-style: normal;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .card-header { flex-wrap: wrap; gap: 8px; }
+    .card-id { order: 3; }
+    .card-tag { order: 1; }
+    .card-meta { order: 2; width: 100%; }
+    .card-body { padding: 16px 14px; }
+    .card-note { padding-inline: 14px; }
+  }
+</style>
+
+<header class="page-header">
+  <div class="eyebrow">Gestión de Arriendos · v2</div>
+  <h1>Diagramas de Secuencia</h1>
+  <p>Casos de uso — Vue 3 · Spring Boot (Java 25) · PostgreSQL · JWT</p>
+</header>
+
+<nav class="tab-nav" role="tablist">
+  <div class="tab-nav-inner">
+    <button class="tab-btn active" role="tab" aria-selected="true"  onclick="switchTab('auth',   this)">Autenticación  <span class="tab-count">5</span></button>
+    <button class="tab-btn"        role="tab" aria-selected="false" onclick="switchTab('admin',  this)">Administrador  <span class="tab-count">4</span></button>
+    <button class="tab-btn"        role="tab" aria-selected="false" onclick="switchTab('tenant', this)">Arrendatario   <span class="tab-count">1</span></button>
+  </div>
+</nav>
+
+<!-- ═══════════════ AUTENTICACIÓN ═══════════════ -->
+<section id="tab-auth" class="tab-content active" role="tabpanel">
+<div class="section-inner">
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-A1</span>
+      <div class="card-meta">
+        <h2>Login</h2>
+        <p>El usuario ingresa sus credenciales. El backend verifica la contraseña con BCrypt y, si son válidas, emite un access JWT (en cuerpo) y un refresh token opaco (en cookie HttpOnly).</p>
+      </div>
+      <span class="card-tag tag-auth">Auth</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor U as Usuario
+    participant L as LoginView
+    participant SA as stores/auth
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    U->>L: usuario + contraseña
+    L->>SA: login(user, pass)
+    SA->>H: POST /api/auth/login (auth:false)
+    H->>B: POST /api/auth/login
+    B->>DB: SELECT app_user WHERE username=?
+    DB-->>B: AppUser + password_hash
+    B->>B: BCrypt.verify(pass, hash)
+    alt Credenciales válidas y usuario habilitado
+        B-->>H: 200 AuthResponse + Set-Cookie rentals_refresh (HttpOnly)
+        H-->>SA: { accessToken, expiresIn, user{id, role, tenantId} }
+        SA->>SA: accessToken en memoria — status = authenticated
+        SA-->>L: rol detectado
+        L-->>U: AdminView ó TenantView según rol
+    else Credenciales inválidas o usuario deshabilitado
+        B-->>H: 401 ProblemDetail (mismo texto siempre)
+        H-->>SA: ApiError(401)
+        SA-->>L: error
+        L-->>U: "Usuario o contraseña incorrectos"
+    end
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-A2</span>
+      <div class="card-meta">
+        <h2>Restaurar sesión tras recarga</h2>
+        <p>Al recargar la página el access token se pierde de memoria. App.vue llama a restoreSession(), que usa la cookie HttpOnly para obtener un token nuevo sin pedir credenciales de nuevo.</p>
+      </div>
+      <span class="card-tag tag-auth">Auth</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor U as Usuario
+    participant A as App.vue
+    participant SA as stores/auth
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    U->>A: Recarga la página
+    A->>SA: restoreSession()
+    SA->>H: POST /api/auth/refresh (auth:false)
+    Note over H,B: Cookie HttpOnly enviada automáticamente por el navegador
+    H->>B: POST /api/auth/refresh
+    B->>DB: SELECT refresh_token WHERE token_hash = SHA256(cookie)
+    alt Token válido, no revocado y usuario habilitado
+        DB-->>B: RefreshToken activo
+        B->>DB: UPDATE refresh_token SET revoked_at = now (revoca el anterior)
+        B->>DB: INSERT nuevo refresh_token (rotación)
+        B-->>H: 200 AuthResponse + nueva Cookie (rotación)
+        H-->>SA: accessToken + user
+        SA->>SA: status = authenticated
+        SA-->>A: rol del usuario
+        A-->>U: AdminView ó TenantView
+    else Token expirado, revocado o usuario deshabilitado
+        B-->>H: 401 + Set-Cookie borra rentals_refresh
+        H-->>SA: ApiError(401)
+        SA->>SA: status = anonymous
+        SA-->>A: anonymous
+        A-->>U: LoginView
+    end
+      </pre>
+    </div>
+    <div class="card-note">El refresh token se rota en cada uso: el anterior queda revocado, se emite uno nuevo. Si llega un token ya revocado (posible robo), se revocan TODAS las sesiones del usuario.</div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-A3</span>
+      <div class="card-meta">
+        <h2>Renovación automática de token</h2>
+        <p>Si una petición recibe 401 (access token expirado), http.js renueva el token de forma transparente y reintenta la petición original una sola vez. Refrescos concurrentes comparten una única Promise.</p>
+      </div>
+      <span class="card-tag tag-auth">Auth</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    participant C as Componente Vue
+    participant ST as stores/tenants
+    participant H as http.js
+    participant SA as stores/auth
+    participant B as Backend
+
+    C->>ST: acción (p.ej. loadTenant)
+    ST->>H: GET /api/tenants/1 (Bearer expirado)
+    H->>B: GET /api/tenants/1
+    B-->>H: 401 Unauthorized
+    H->>SA: refreshAccessToken()
+    Note over SA,B: Refrescos concurrentes reutilizan la misma Promise
+    SA->>B: POST /api/auth/refresh (cookie HttpOnly)
+    alt Refresh exitoso
+        B-->>SA: 200 nuevo accessToken
+        SA->>SA: accessToken actualizado en memoria
+        SA-->>H: token renovado
+        H->>B: GET /api/tenants/1 (Bearer nuevo — solo un reintento)
+        B-->>H: 200 TenantDetailDto
+        H-->>ST: datos
+        ST-->>C: estado actualizado — transparente para el usuario
+    else Cookie expirada o revocada
+        B-->>SA: 401
+        SA->>SA: clearSession() + tenantsStore.reset()
+        SA-->>H: onAuthFailure()
+        H-->>ST: ApiError(401)
+        ST-->>C: error
+        C-->>C: App.vue muestra LoginView
+    end
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-A4</span>
+      <div class="card-meta">
+        <h2>Logout</h2>
+        <p>El backend revoca el refresh token activo y borra la cookie. El store limpia el access token de la memoria y resetea el estado de la aplicación.</p>
+      </div>
+      <span class="card-tag tag-auth">Auth</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor U as Usuario
+    participant AH as AppHeader
+    participant SA as stores/auth
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    U->>AH: Clic "Salir"
+    AH->>SA: logout()
+    SA->>H: POST /api/auth/logout (auth:false)
+    Note over H,B: Cookie HttpOnly enviada automáticamente
+    H->>B: POST /api/auth/logout
+    B->>DB: UPDATE refresh_token SET revoked_at = now (si existe)
+    B-->>H: 204 + Set-Cookie borra rentals_refresh (idempotente)
+    H-->>SA: ok
+    SA->>SA: clearSession() — accessToken = null, status = anonymous
+    SA->>SA: tenantsStore.reset()
+    SA-->>AH: sesión cerrada
+    AH-->>U: LoginView
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-A5</span>
+      <div class="card-meta">
+        <h2>Cambio de contraseña</h2>
+        <p>Al cambiar la contraseña el backend revoca todas las sesiones activas del usuario. El frontend cierra la sesión actual y redirige al login, incluyendo otros dispositivos abiertos.</p>
+      </div>
+      <span class="card-tag tag-auth">Auth</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor U as Usuario
+    participant CP as ChangePasswordForm
+    participant SA as stores/auth
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    U->>CP: contraseña actual + nueva contraseña
+    CP->>SA: changePassword(current, newPass)
+    SA->>H: PUT /api/auth/password (Bearer)
+    H->>B: PUT /api/auth/password
+    B->>B: BCrypt.verify(currentPassword, hash)
+    alt Contraseña actual correcta y nueva contraseña válida
+        B->>DB: UPDATE app_user SET password_hash = BCrypt(newPass)
+        B->>DB: UPDATE refresh_token SET revoked_at = now (TODAS las sesiones)
+        B-->>H: 204 + Set-Cookie borra rentals_refresh
+        H-->>SA: ok
+        SA->>SA: clearSession()
+        SA-->>CP: ok
+        CP-->>U: "Contraseña cambiada. Inicia sesión de nuevo"
+        CP-->>U: App.vue muestra LoginView
+    else Contraseña actual incorrecta
+        B-->>H: 401 ProblemDetail
+        H-->>SA: ApiError(401)
+        SA-->>CP: error
+        CP-->>U: "Contraseña actual incorrecta"
+    else Nueva contraseña inválida (menos de 10 caracteres)
+        B-->>H: 400 ProblemDetail + campo errors
+        H-->>SA: ApiError(400)
+        SA-->>CP: error de validación
+        CP-->>U: Error de validación
+    end
+      </pre>
+    </div>
+    <div class="card-note">Revocar TODAS las sesiones activas es intencional: si el usuario cambia la contraseña por sospecha de compromiso, cierra también los accesos desde otros dispositivos.</div>
+  </div>
+
+</div>
+</section>
+
+<!-- ═══════════════ ADMINISTRADOR ═══════════════ -->
+<section id="tab-admin" class="tab-content" role="tabpanel">
+<div class="section-inner">
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-AD1</span>
+      <div class="card-meta">
+        <h2>Registrar arrendatario — RF-01</h2>
+        <p>El administrador completa el formulario con los datos del arrendatario y sus credenciales iniciales. Tenant y AppUser se crean en una única transacción atómica: si el username ya existe, nada se persiste.</p>
+      </div>
+      <span class="card-tag tag-admin">Admin</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor A as Administrador
+    participant TF as TenantForm
+    participant ST as stores/tenants
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    A->>TF: nombre, unidad, contacto, día de pago, fecha inicio, monto mensual, username, contraseña inicial
+    TF->>ST: createTenant(request)
+    ST->>H: POST /api/tenants (Bearer ADMIN)
+    H->>B: POST /api/tenants
+    B->>B: @Valid CreateTenantRequest
+    B->>DB: BEGIN TRANSACTION
+    B->>DB: INSERT INTO tenant (full_name, unit, ...)
+    B->>DB: SELECT app_user WHERE username = ? (verifica unicidad)
+    alt Username disponible
+        B->>DB: INSERT INTO app_user (role=ARRENDATARIO, password_hash=BCrypt(pass))
+        B->>DB: COMMIT
+        B->>B: DebtCalculatorService.calculate(tenant, now)
+        B-->>H: 201 TenantDetailDto + Location header
+        H-->>ST: TenantDetailDto
+        ST->>ST: Añade resumen a la lista local
+        ST-->>TF: ok
+        TF-->>A: Arrendatario registrado
+    else Username ya existe
+        B->>DB: ROLLBACK (ni tenant ni usuario creados)
+        B-->>H: 409 ProblemDetail
+        H-->>ST: ApiError(409)
+        ST-->>TF: error
+        TF-->>A: "El nombre de usuario ya está en uso"
+    end
+      </pre>
+    </div>
+    <div class="card-note">La garantía (si se informa en el mismo formulario) se crea en una segunda llamada independiente al endpoint de cargos únicos (UC-AD3), igual que en v1.</div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-AD2</span>
+      <div class="card-meta">
+        <h2>Marcar mes como pagado — RF-04</h2>
+        <p>El administrador marca un mes adeudado como pagado. La operación es idempotente (ON CONFLICT DO NOTHING). El backend recalcula la deuda y devuelve el TenantDetailDto actualizado.</p>
+      </div>
+      <span class="card-tag tag-admin">Admin</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor A as Administrador
+    participant MT as MonthsTable
+    participant ST as stores/tenants
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    A->>MT: Clic "Marcar pagado" en el mes 2026-09
+    MT->>ST: markMonthPaid(tenantId, "2026-09")
+    ST->>H: PUT /api/tenants/1/paid-months/2026-09 (Bearer ADMIN)
+    H->>B: PUT /api/tenants/1/paid-months/2026-09
+    Note over B: Idempotente — ON CONFLICT DO NOTHING
+    B->>DB: INSERT INTO paid_month (1, '2026-09') ON CONFLICT DO NOTHING
+    B->>DB: SELECT tenant con paid_months y one_time_charges
+    B->>B: DebtCalculatorService.calculate(tenant, now)
+    B-->>H: 200 TenantDetailDto (deuda recalculada)
+    H-->>ST: TenantDetailDto
+    ST->>ST: detailsById[1] = TenantDetailDto
+    ST-->>MT: estado reactivo actualizado
+    MT-->>A: Mes desaparece de la lista de adeudados
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-AD3</span>
+      <div class="card-meta">
+        <h2>Registrar cargo único — RF-02</h2>
+        <p>El administrador agrega un cargo irregular (garantía, reparación, etc.) a un arrendatario. El cargo suma al total adeudado hasta que sea marcado como pagado.</p>
+      </div>
+      <span class="card-tag tag-admin">Admin</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor A as Administrador
+    participant CF as ChargeForm
+    participant ST as stores/tenants
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    A->>CF: descripción + monto (USD)
+    CF->>ST: addCharge(tenantId, { description, amount })
+    ST->>H: POST /api/tenants/1/charges (Bearer ADMIN)
+    H->>B: POST /api/tenants/1/charges
+    B->>B: @Valid CreateChargeRequest
+    B->>DB: INSERT INTO one_time_charge (tenant_id, description, amount, paid=false)
+    B->>DB: SELECT tenant + paid_months + one_time_charges
+    B->>B: DebtCalculatorService.calculate(tenant, now)
+    B-->>H: 201 TenantDetailDto
+    H-->>ST: TenantDetailDto
+    ST->>ST: detailsById[1] = TenantDetailDto
+    ST-->>CF: ok
+    CF-->>A: Cargo aparece en la lista y suma al total adeudado
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-AD4</span>
+      <div class="card-meta">
+        <h2>Marcar cargo único como pagado</h2>
+        <p>El administrador registra el cobro de un cargo único. Idempotente: si ya estaba pagado, devuelve igualmente el estado actualizado. El total adeudado se recalcula en el backend.</p>
+      </div>
+      <span class="card-tag tag-admin">Admin</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor A as Administrador
+    participant TD as TenantDetail
+    participant ST as stores/tenants
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    A->>TD: Clic "Marcar pagado" sobre el cargo #10
+    TD->>ST: markChargePaid(tenantId, chargeId)
+    ST->>H: PUT /api/tenants/1/charges/10/paid (Bearer ADMIN)
+    H->>B: PUT /api/tenants/1/charges/10/paid
+    Note over B: Idempotente — guarda paid=true aunque ya lo estuviera
+    B->>DB: UPDATE one_time_charge SET paid=true WHERE id=10 AND tenant_id=1
+    B->>DB: SELECT tenant + paid_months + one_time_charges
+    B->>B: DebtCalculatorService.calculate(tenant, now)
+    B-->>H: 200 TenantDetailDto (deuda recalculada)
+    H-->>ST: TenantDetailDto
+    ST->>ST: detailsById[1] = TenantDetailDto
+    ST-->>TD: estado reactivo actualizado
+    TD-->>A: Cargo marcado como pagado y descontado del total
+      </pre>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- ═══════════════ ARRENDATARIO ═══════════════ -->
+<section id="tab-tenant" class="tab-content" role="tabpanel">
+<div class="section-inner">
+
+  <div class="diagram-card">
+    <div class="card-header">
+      <span class="card-id">UC-T1</span>
+      <div class="card-meta">
+        <h2>Ver estado de cuenta propio — RF-05</h2>
+        <p>El arrendatario ve su cuenta al iniciar sesión. El endpoint extrae el tenantId directamente del JWT, eliminando el riesgo de acceder a la cuenta de otro arrendatario cambiando un parámetro (IDOR).</p>
+      </div>
+      <span class="card-tag tag-tenant">Arrendatario</span>
+    </div>
+    <div class="card-body">
+      <pre class="mermaid">
+sequenceDiagram
+    actor T as Arrendatario
+    participant TV as TenantView
+    participant ST as stores/tenants
+    participant H as http.js
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    T->>TV: App.vue carga TenantView (rol = ARRENDATARIO)
+    TV->>ST: loadMyAccount()
+    ST->>H: GET /api/me/tenant (Bearer ARRENDATARIO)
+    H->>B: GET /api/me/tenant
+    Note over B: tenantId extraído del JWT — sin parámetro en URL (previene IDOR)
+    B->>DB: SELECT tenant WHERE id = tenantId (del JWT)
+    B->>DB: SELECT paid_months + one_time_charges WHERE tenant_id = tenantId
+    B->>B: DebtCalculatorService.calculate(tenant, now)
+    B-->>H: 200 TenantDetailDto
+    H-->>ST: TenantDetailDto
+    ST->>ST: myAccount = TenantDetailDto
+    ST-->>TV: estado reactivo
+    TV-->>T: Meses adeudados + total USD + badge AL_DIA / ATRASADO
+      </pre>
+    </div>
+    <div class="card-note">Si el arrendatario intentara llamar a GET /api/tenants o GET /api/tenants/{id} recibiría 403, ya que esas rutas requieren rol ADMIN.</div>
+  </div>
+
+</div>
+</section>
+
+<script>
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+</script>

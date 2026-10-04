@@ -35,7 +35,7 @@ VALUES (
     'luis.lopez',
     '{bcrypt}$2a$10$HEu2yAnFau3NyGpMzx1kJuBRD.7XnhkFLLdftDCZFGtehVNdkQkRu',
     'ARRENDATARIO',
-    (SELECT id FROM tenant WHERE unit = 'Depto 402'),
+    (SELECT id FROM tenant WHERE unit = 'Depto 302'),
     TRUE,
     '2026-06-01T09:00:00Z',
     '2026-06-01T09:00:00Z'
@@ -47,7 +47,7 @@ VALUES (
     'pedro.vera',
     '{bcrypt}$2a$10$HEu2yAnFau3NyGpMzx1kJuBRD.7XnhkFLLdftDCZFGtehVNdkQkRu',
     'ARRENDATARIO',
-    (SELECT id FROM tenant WHERE unit = 'Depto 501'),
+    (SELECT id FROM tenant WHERE unit = 'Depto 201'),
     TRUE,
     '2026-08-01T09:00:00Z',
     '2026-08-01T09:00:00Z'

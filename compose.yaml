@@ -1,8 +1,9 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
+    container_name: arrendatarios_db
     environment:
-      POSTGRES_DB: rentals
+      POSTGRES_DB: ${DB_NAME:-arrendatarios_db}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:

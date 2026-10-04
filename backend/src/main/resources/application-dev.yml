@@ -5,6 +5,7 @@ spring:
     password: ${DB_PASSWORD:rentals}
   flyway:
     locations: classpath:db/migration,classpath:db/seed
+    out-of-order: true
 
 rentals:
   auth:

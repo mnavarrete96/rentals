@@ -391,3 +391,322 @@ APROBADO CON OBSERVACIÓN MENOR
 | 6. Móvil 375px columna única | PASA | — |
 
 Responsable del arreglo: dev1 (`src/css/styles.css`).
+
+---
+
+## F-01, F-02, F-03, F-04, F-05, U-01 · Revisión frontend v2 completo · 2026-10-03
+
+### Contexto
+
+Revisión estática del código fuente del frontend v2 contra `docs/SPEC.md` (§11, alcance v2),
+`docs/DESIGN.md` y `docs/ARCHITECTURE.md` §7 y §15.7.
+
+Archivos leídos: `frontend/package.json`, `frontend/vite.config.js`,
+`frontend/src/assets/styles/tokens.css`, `frontend/src/assets/styles/base.css`,
+`frontend/src/assets/fonts/`, `frontend/src/utils/format.js`,
+`frontend/src/api/http.js`, `frontend/src/api/authApi.js`, `frontend/src/api/tenantsApi.js`,
+`frontend/src/stores/auth.js`, `frontend/src/stores/tenants.js`,
+`frontend/src/views/LoginView.vue`, `frontend/src/views/AdminView.vue`,
+`frontend/src/views/TenantView.vue`, `frontend/src/App.vue`,
+`frontend/src/components/common/AppHeader.vue`,
+`frontend/src/components/common/ChangePasswordForm.vue`,
+`frontend/src/components/admin/TenantList.vue`,
+`frontend/src/components/admin/TenantDetail.vue`,
+`frontend/src/components/admin/TenantForm.vue`,
+`frontend/src/components/admin/ChargeForm.vue`,
+`frontend/src/components/tenant/AccountStatement.vue`,
+`frontend/src/test/http.test.js`, `frontend/src/test/auth.store.test.js`.
+
+Comandos ejecutados:
+- `npm run build` → VERDE (109 KB JS, fuentes Inter incluidas, advertencia no bloqueante sobre import dinámico de tenants.js)
+- `npm run test` → 21/21 VERDE
+
+---
+
+### F-01: Scaffold frontend
+
+| Verificación | Resultado | Evidencia |
+|---|---|---|
+| `package.json` versiones: Vue ^3.5.0, Pinia ^2.2.0, Vite ^6.0.0, Vitest ^2.0.0, jsdom ^25.0.0 | OK | Líneas 12-22 de `package.json` |
+| `vite.config.js` proxy `/api → http://localhost:8080` | OK | Línea 8 de `vite.config.js` |
+| `vite.config.js` test environment jsdom | OK | Línea 12 de `vite.config.js` |
+| `tokens.css` paleta warm/light portada desde v1 (--color-bg, --color-accent, --color-success, --color-danger, etc.) | OK | `tokens.css` completo; valores coinciden con `docs/DESIGN.md §2` |
+| `base.css` @font-face con rutas `../fonts/` | OK | Líneas 14-37 de `base.css` |
+| Archivos .woff2 presentes en `frontend/src/assets/fonts/` | OK | `inter-v20-latin.woff2` e `inter-v20-latin-ext.woff2` presentes |
+| `format.js` exporta `formatUSD` y `formatMonth` | OK | Líneas 12-25 de `format.js`; formatUSD usa `Intl.NumberFormat('en-US', {style:'currency', currency:'USD'})`, formatMonth usa `toLocaleDateString('es-EC', {...})` |
+| `npm run build` verde | OK | Vite 6.4.3; 109 KB JS; sin errores |
+
+**Resultado F-01: PASA**
+
+---
+
+### F-02: Capa HTTP y stores
+
+| Verificación | Resultado | Evidencia |
+|---|---|---|
+| `http.js` exporta `apiFetch`, `ApiError`, `configureAuth` | OK | Líneas 23, 37, 59 de `http.js` |
+| `apiFetch` añade `Authorization: Bearer` cuando `auth:true` y hay token | OK | Líneas 67-70 de `http.js` |
+| Reintento único tras 401 con `auth:true` | OK | Líneas 75-91 de `http.js`; flag `_retry` previene segundo reintento |
+| Refresh fallido llama `onAuthFailure` | OK | Línea 87 de `http.js` |
+| 204 devuelve `null` | OK | Línea 98 de `http.js` |
+| `authApi.js`: login, refresh, logout con `auth:false`; changePassword con `auth:true` | OK | `authApi.js` completo |
+| `tenantsApi.js`: listTenants, getTenant, createTenant, addCharge, markChargePaid, markMonthPaid, unmarkMonth, getMyTenant | OK | `tenantsApi.js` completo; 8 funciones presentes |
+| `stores/auth.js`: status, user, accessToken (solo memoria), refreshPromise | OK | Líneas 19-22 de `auth.js` |
+| `stores/auth.js`: restoreSession, login, refreshAccessToken, logout, changePassword, clearSession | OK | Líneas 36-121 de `auth.js` |
+| `stores/auth.js`: isAdmin, isTenant, isAuthenticated | OK | Líneas 25-27 de `auth.js` |
+| `stores/auth.js`: configureAuth llamado al inicializar (DIP) | OK | Líneas 135-139 de `auth.js` |
+| Token NO escrito en localStorage/sessionStorage | OK | Búsqueda textual en `src/` sin resultados de escritura a localStorage |
+| `stores/tenants.js`: summaries, detailsById, myAccount, loading, error | OK | Líneas 15-21 de `tenants.js` |
+| `stores/tenants.js`: loadSummaries, loadDetail/loadTenant, createTenant, addCharge, markChargePaid, markMonthPaid, unmarkMonth, loadMyAccount, reset | OK | Acciones completas (nota: método nombrado `loadDetail`+`selectTenant` en lugar de `loadTenant` — funcionalidad equivalente) |
+| `npm run test` 21/21 verde | OK | Vitest 2.1.9; 2 archivos de test, 21 tests pasados |
+
+**Resultado F-02: PASA**
+
+---
+
+### F-03: Vista Admin
+
+| Verificación | Resultado | Evidencia |
+|---|---|---|
+| `AdminView.vue` carga summaries en `onMounted` | OK | Línea 39-41 de `AdminView.vue` |
+| Layout 2 columnas `320px 1fr` | OK | Línea 259-262 de `AdminView.vue` |
+| Modal TenantForm con manejo de 409 | OK | Líneas 59-76, 188-205 de `AdminView.vue` |
+| Modal ChargeForm | OK | Líneas 208-224 de `AdminView.vue` |
+| `TenantList.vue` tarjetas con badge AL_DIA/ATRASADO | OK | Líneas 55-67 de `TenantList.vue` |
+| Tarjeta activa destacada con `card--active` (borde izquierdo 3px acento) | OK | Líneas 135-140 de `TenantList.vue` |
+| `TenantDetail.vue` detalle completo con meses adeudados, cargos, total | OK | Completo con `formatUSD`, `formatMonth`, `btn-mark-paid`, `btn-mark-one-time-paid`, `total-row` |
+| `TenantForm.vue` campos username + initialPassword con toggle | OK | Líneas 210-270 de `TenantForm.vue`; `showPassword` ref, SVG toggle inline |
+| `TenantForm.vue` error 409 con `role="alert"` | OK | Líneas 103-113 de `TenantForm.vue` |
+| `ChargeForm.vue` description + amount con validación | OK | Líneas 27-44 de `ChargeForm.vue` |
+
+**Resultado F-03: PASA**
+
+---
+
+### F-04 + F-05: Vistas arrendatario, auth y orquestador
+
+| Verificación | Resultado | Evidencia |
+|---|---|---|
+| `AccountStatement.vue` estado de cuenta con badge, meses, cargos, total | OK | Completo; filtra `unpaidCharges`, muestra "Estás al día. No tienes deudas pendientes." si totalOwed = 0 |
+| `AccountStatement.vue` arrendatario no puede marcar pagos | OK | Solo lectura; no emite eventos de acción |
+| `TenantView.vue` llama `loadMyAccount()` en `onMounted` | OK | Líneas 22-24 de `TenantView.vue` |
+| `TenantView.vue` layout max-width 760px + AppHeader + ChangePasswordForm | OK | Líneas 36-57, 70-73 de `TenantView.vue` |
+| `AppHeader.vue` logo terracota izquierda | OK | Líneas 31-34, 77-84 de `AppHeader.vue` |
+| `AppHeader.vue` username (read-only) + "Cambiar contraseña" + "Salir" | OK | Líneas 37-57 de `AppHeader.vue` |
+| `AppHeader.vue` sticky top 0, 56px escritorio / 48px móvil | OK | Líneas 62-70, 130-143 de `AppHeader.vue` |
+| `ChangePasswordForm.vue` 3 campos PasswordField con toggle SVG | OK | Líneas 141-238 de `ChangePasswordForm.vue` |
+| `ChangePasswordForm.vue` validación frontend: nueva == confirmar | OK | Líneas 88-91 de `ChangePasswordForm.vue` |
+| `ChangePasswordForm.vue` error 401 → "Contraseña actual incorrecta" | OK | Línea 109 de `ChangePasswordForm.vue` |
+| `ChangePasswordForm.vue` error 400 → detalle del backend | OK | Líneas 110-113 de `ChangePasswordForm.vue` |
+| `ChangePasswordForm.vue` éxito → `.modal-success` + cierre en 2s | OK | Líneas 104-106 de `ChangePasswordForm.vue` |
+| `ChangePasswordForm.vue` role="dialog" aria-modal, focus trap, Escape cierra | OK | Líneas 131-135, 51-73 de `ChangePasswordForm.vue` |
+| `LoginView.vue` campos username/password con toggle | OK | Líneas 46-89 de `LoginView.vue` |
+| `LoginView.vue` error genérico "Usuario o contraseña incorrectos" | OK | Línea 30 de `LoginView.vue` |
+| `LoginView.vue` loading state (botón deshabilitado + "Ingresando…") | OK | Líneas 104-111 de `LoginView.vue` |
+| `LoginView.vue` SIN enlace "Olvidé mi contraseña" | OK | Revisión completa del template; no existe tal enlace |
+| `App.vue` `restoreSession()` en `onMounted` | OK | Líneas 25-27 de `App.vue` |
+| `App.vue` status 'unknown' → div `.app-loading` con role="status" | OK | Líneas 32-39 de `App.vue` |
+| `App.vue` status 'anonymous' → LoginView | OK | Línea 42 de `App.vue` |
+| `App.vue` isAdmin → AdminView | OK | Línea 45 de `App.vue` |
+| `App.vue` else → TenantView | OK | Línea 48 de `App.vue` |
+| AppHeader presente en AdminView y TenantView; NO en LoginView | OK | Importado en `AdminView.vue` línea 14 y `TenantView.vue` línea 14; ausente en `LoginView.vue` |
+
+**Resultado F-04 + F-05: PASA**
+
+---
+
+### U-01: DESIGN.md
+
+| Verificación | Resultado | Evidencia |
+|---|---|---|
+| Sección LoginView con layout, campos y estados definidos | OK | `DESIGN.md` §5 "LoginView — tarjeta de inicio de sesión" y §6 "LoginView (pantalla de inicio de sesión)" |
+| Sección AppHeader con elementos y responsive | OK | `DESIGN.md` §5 "AppHeader — cabecera de sesión activa" con `.app-header`, `.btn-header`, responsive móvil |
+| Sección ChangePasswordForm con modal, campos y estados | OK | `DESIGN.md` §5 "ChangePasswordForm — formulario de cambio de contraseña" con overlay, 3 campos, tabla de estados |
+| TenantForm con username + initialPassword documentados | OK | `DESIGN.md` §5 "TenantForm — campos de credenciales" con formato, hints y error 409 |
+| Toggle Admin/Arrendatario marcado como ELIMINADO en v2 | OK | `DESIGN.md` §5 línea 119: "Toggle Admin / Arrendatario — ELIMINADO EN v2" |
+
+**Resultado U-01: PASA**
+
+---
+
+### Seguridad
+
+| Verificación | Resultado | Evidencia |
+|---|---|---|
+| Sin toggle v1 (`.mode-toggle`, `.btn-mode`) en `frontend/src/` | OK | `grep` sin resultados |
+| Sin enlace "Olvidé mi contraseña" | OK | `grep` sin resultados |
+| Sin secretos hardcodeados en frontend | OK | `grep` sin contraseñas reales en código |
+| Token solo en memoria (no en localStorage/sessionStorage) | OK | Comentario en `auth.js` línea 5 + búsqueda grep sin escrituras |
+| Sin `v-html` con datos del servidor | OK | No se encontró uso de `v-html` en componentes |
+
+---
+
+### Advertencia no bloqueante
+
+La compilación de Vite muestra un aviso (no error) sobre `tenants.js` importado estáticamente por `AdminView.vue` y `TenantView.vue` y dinámicamente en `auth.clearSession()`. Esto no afecta el bundle de producción ni la funcionalidad. Fue documentado por dev1 en `docs/handoff/2026-10-03-dev1-F04F05.md`.
+
+---
+
+### Criterios de aprobación — resultado final
+
+| Criterio | Estado |
+|---|---|
+| `npm run build` verde | OK |
+| `npm run test` verde (21 tests) | OK |
+| App.vue orquesta correctamente por status/rol | OK |
+| TenantForm incluye username + initialPassword con toggle | OK |
+| ChangePasswordForm tiene 3 campos, validación y manejo de errores | OK |
+| AppHeader aparece en AdminView y TenantView | OK |
+| LoginView sin enlace "Olvidé mi contraseña" | OK |
+| Tokens CSS de v1 portados en tokens.css | OK |
+| Fuentes .woff2 presentes en frontend/src/assets/fonts/ | OK |
+| DESIGN.md tiene secciones de auth (LoginView, AppHeader, ChangePasswordForm) | OK |
+
+**Veredicto global: APROBADO — todas las tareas F-01, F-02, F-03, F-04, F-05, U-01 pasan.**
+
+---
+
+## T-v2 · Validación backend completo v2 (B-01 a B-06, B-04) · 2026-10-04
+
+### Contexto
+
+Revisión estática del código fuente del backend v2 contra `docs/SPEC.md` (§11), `docs/ARCHITECTURE.md`
+(§6, §15) y las notas de traspaso `docs/handoff/2026-10-04-dev2-B04.md` y
+`docs/handoff/2026-10-03-dev2-B06.md`.
+
+Archivos leídos: todos los `.java` en `backend/src/main/java/`, todos los `.sql` en
+`backend/src/main/resources/db/`, `application.yml`, `application-dev.yml`,
+`backend/src/test/resources/application.properties`.
+
+Comando ejecutado: `./gradlew test --rerun` → BUILD SUCCESSFUL, **53 tests, 0 fallos, 0 errores, 0 omitidos**.
+
+---
+
+### 1. Estructura de archivos clave
+
+| Archivo | Existe | Nota |
+|---|---|---|
+| `V1__init_schema.sql` | OK | 3 tablas: tenant, paid_month, one_time_charge |
+| `V2__auth_schema.sql` | OK | app_user + refresh_token |
+| `V3__auth_add_lockout.sql` | OK | failed_attempts + locked_until sobre app_user |
+| `V1000__dev_seed.sql` | OK | 3 arrendatarios (perfil dev) |
+| `V1001__dev_seed_users.sql` | OK | admin + 3 arrendatarios (perfil dev) |
+| `Tenant.java` | OK | Entidad JPA con paidMonths (@ElementCollection) |
+| `OneTimeCharge.java` | OK | Entidad JPA, @ManyToOne LAZY a Tenant |
+| `AppUser.java` | OK | Entidad con failedAttempts, lockedUntil, isLocked(Clock), incrementFailedAttempts(Clock) |
+| `RefreshToken.java` | OK | isRevoked(), isExpired(Clock), isValid(Clock), revoke(Clock) |
+| `Role.java` | OK | enum ADMIN, ARRENDATARIO |
+| `TenantStatus.java` | OK | enum AL_DIA, ATRASADO |
+| `TenantService.java` | OK | @Transactional a nivel clase; método create() llama UserAccountService |
+| `AuthService.java` | OK | login, refresh, logout, changePassword + lockout enforcement |
+| `DebtCalculatorService.java` | OK | Puro, sin repositorios ni reloj directo |
+| `UserAccountService.java` | OK | createTenantUser, createAdmin |
+| `TenantController.java` | OK | 7 endpoints REST (consolida ChargeController y PaidMonthController) |
+| `MeController.java` | OK | GET /api/me/tenant extrae tenantId del JWT |
+| `AuthController.java` | OK | A1-A4 completos |
+| `SecurityConfig.java` | OK | Stateless, CSRF off, reglas por ruta según §15.4 |
+| `JwtConfig.java` | OK | Beans JwtEncoder/JwtDecoder HS256, JwtAuthenticationConverter |
+| `JwtAccessTokenIssuer.java` | OK | Implementa AccessTokenIssuer |
+| `RefreshTokenService.java` | OK | Token opaco, SHA-256 hash, rotación, reuse detection |
+| `AdminBootstrapRunner.java` | OK | Lee de AuthProperties (env vars), idempotente |
+| `RefreshCookieFactory.java` | OK | httpOnly(true), SameSite=Strict, Path=/api/auth |
+| `GlobalExceptionHandler.java` | OK | ProblemDetail: 404, 400, 409, 401, 400 validation |
+
+---
+
+### 2. Requisitos funcionales (RF)
+
+| RF | Verificación | Resultado | Evidencia |
+|---|---|---|---|
+| RF-01 | POST /api/tenants con username+initialPassword; @Transactional crea tenant+AppUser; 409 si username duplicado | OK | TenantController.create() → TenantService.create() @Transactional + UserAccountService.createTenantUser(); GlobalExceptionHandler mapea UsernameTakenException → 409 |
+| RF-02 | POST /api/tenants/{id}/charges crea OneTimeCharge | OK | TenantController.addCharge() → TenantService.addCharge(); retorna 201 con TenantDetailDto |
+| RF-04 | PUT /api/tenants/{id}/paid-months/{yearMonth} añade al Set<YearMonth> paidMonths | OK | TenantController.markMonthPaid() → TenantService.markMonthPaid() → tenant.getPaidMonths().add(ym); idempotente vía Set |
+| RF-05 | GET /api/me/tenant lee tenantId del JWT (no URL) | OK | MeController: `Long tenantId = jwt.getClaim("tenantId")` → TenantService.getMyTenant(tenantId); sin IDOR |
+| RF-06 | Login real: AuthController A1-A4, roles ADMIN y ARRENDATARIO | OK | AuthController + AuthService + JwtConfig + SecurityConfig completos |
+
+---
+
+### 3. Checklist de seguridad (ARCHITECTURE §15.9)
+
+| Punto | Resultado | Evidencia |
+|---|---|---|
+| Access token solo en cuerpo JSON (no cookie) | OK | AuthController.login() retorna AuthResponse.accessToken en body; nunca Set-Cookie con token JWT |
+| Refresh token en cookie HttpOnly | OK | RefreshCookieFactory.create(): `.httpOnly(true).sameSite("Strict").path("/api/auth")` |
+| SecurityConfig: /api/tenants/** requiere ADMIN | OK | `requestMatchers("/api/tenants/**").hasRole("ADMIN")` |
+| SecurityConfig: /api/me/** requiere ARRENDATARIO | OK | `requestMatchers("/api/me/**").hasRole("ARRENDATARIO")` |
+| SecurityConfig: /api/auth/** permitAll (login/refresh/logout) | OK | 3 requestMatchers específicos con permitAll; PUT /api/auth/password requiere ADMIN o ARRENDATARIO |
+| MeController extrae tenantId del JWT (sin IDOR) | OK | `jwt.getClaim("tenantId")` — ningún parámetro de URL |
+| TenantService.create es @Transactional | OK | @Transactional a nivel clase en TenantService |
+| AdminBootstrapRunner lee credenciales de env vars | OK | Lee de AuthProperties (@ConfigurationProperties sobre ${RENTALS_BOOTSTRAP_ADMIN_*}) |
+| Sin secretos hardcodeados en código fuente | OK | application.yml: solo ${VAR}; test properties: dummy values con comentario explícito |
+| AppUser.isLocked(Clock) + incrementFailedAttempts | OK | AppUser líneas 123-136: isLocked verifica lockedUntil; incrementFailedAttempts bloquea al llegar a 5 intentos por 15 min |
+| RefreshToken.isRevoked() | OK | RefreshToken línea 74: `return revokedAt != null` |
+| Rotación de refresh token en cada refresh | OK | AuthService.refresh(): revoca el token viejo, emite nuevo via refreshTokenService.createToken() |
+
+---
+
+### 4. Contrato REST (ARCHITECTURE §6)
+
+| Endpoint | Método | Código esperado | Implementado | Clase |
+|---|---|---|---|---|
+| GET /api/tenants | GET | 200 | OK | TenantController.list() |
+| GET /api/tenants/{id} | GET | 200 \| 404 | OK | TenantController.getById() + TenantNotFoundException |
+| POST /api/tenants | POST | 201 + Location \| 409 | OK | TenantController.create() con ResponseEntity.created(location) |
+| PUT /api/tenants/{id}/paid-months/{yearMonth} | PUT | 200 | OK | TenantController.markMonthPaid() |
+| POST /api/tenants/{id}/charges | POST | 201 | OK | TenantController.addCharge() con status(201) |
+| PUT /api/tenants/{id}/charges/{chargeId}/paid | PUT | 200 | OK | TenantController.markChargePaid() |
+| DELETE /api/tenants/{id}/paid-months/{yearMonth} | DELETE | 200 | OK | TenantController.unmarkMonthPaid() |
+| GET /api/me/tenant | GET | 200 | OK | MeController.getMyTenant() |
+| POST /api/auth/login | POST | 200 + Set-Cookie | OK | AuthController.login() |
+| POST /api/auth/refresh | POST | 200 + Set-Cookie \| 401 | OK | AuthController.refresh() |
+| POST /api/auth/logout | POST | 204 + cookie borrada | OK | AuthController.logout() |
+| PUT /api/auth/password | PUT | 204 + cookie borrada | OK | AuthController.changePassword() |
+| GET /actuator/health | GET | 200 (público) | OK | Spring Boot Actuator; management.endpoints.web.exposure.include=health |
+
+---
+
+### 5. Tests del backend
+
+Comando: `./gradlew test --rerun` desde `backend/`
+
+| Suite | Tests | Fallos | Errores | Omitidos |
+|---|---|---|---|---|
+| TenantRepositoryTest (@DataJpaTest + Testcontainers) | 5 | 0 | 0 | 0 |
+| DebtCalculatorServiceTest (JUnit puro) | 11 | 0 | 0 | 0 |
+| TenantControllerTest (@WebMvcTest) | 16 | 0 | 0 | 0 |
+| AuthServiceTest (Mockito puro) | 13 | 0 | 0 | 0 |
+| AuthControllerTest (@WebMvcTest) | 5 | 0 | 0 | 0 |
+| MeControllerTest (@WebMvcTest) | 3 | 0 | 0 | 0 |
+| **TOTAL** | **53** | **0** | **0** | **0** |
+
+Docker disponible: sí (TenantRepositoryTest con Testcontainers pasó).
+BUILD SUCCESSFUL.
+
+---
+
+### 6. Deuda técnica y problemas menores
+
+| Tipo | Descripción | Bloqueante |
+|---|---|---|
+| Desviación arquitectural | ARCHITECTURE §4.2 especifica clases separadas `ChargeController`, `PaidMonthController` y `TenantMapper`. La implementación las consolida en `TenantController` (con mapeo inline en `buildDetailDto`). Funcionalmente equivalente y cumple el contrato REST. | NO |
+| Dev defaults en application-dev.yml | `DB_PASSWORD: ${DB_PASSWORD:rentals}` pone "rentals" como contraseña por defecto. Es conveniente para desarrollo local pero es un valor visible en el repo. Solo afecta al perfil dev. | NO |
+| D-6 sin ADR formal | V3__auth_add_lockout.sql tiene comentario "D-6, approved 2026-10-04" pero no se encontró el ADR correspondiente en DECISIONS.md. La funcionalidad está correctamente implementada. | NO |
+| AuthServiceTest creció de 10 a 13 tests | B-06 reportó 10 tests; el XML muestra 13. Los 3 adicionales cubren lockout (D-6). Correcto. | NO |
+
+No hay TODO/FIXME en el código fuente de producción.
+
+---
+
+### Veredicto T-v2
+
+**APROBADO**
+
+Todos los criterios bloqueantes se cumplen:
+- RF-01, RF-02, RF-04, RF-05, RF-06 implementados
+- SecurityConfig con reglas de rol correctas
+- MeController sin IDOR
+- TenantService.create transaccional
+- Refresh token en cookie HttpOnly
+- AdminBootstrapRunner sin secretos hardcodeados
+- isLocked + incrementFailedAttempts implementados
+- 53/53 tests en verde (incluyendo Testcontainers)

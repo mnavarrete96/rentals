@@ -87,3 +87,29 @@ Cantidad esperada de arrendatarios: **5 a 20**.
 | Fecha | Cambio | Motivo | Aprobado por |
 |---|---|---|---|
 | 2026-10-03 | Versión inicial | Entrevista con el usuario (2 rondas de preguntas) | Usuario |
+| 2026-10-03 | Cambio de alcance v1→v2: migración a stack dinámico | Usuario decide avanzar al roadmap v2 con backend real y framework frontend | Usuario |
+
+## 11. Alcance v2 (aprobado 2026-10-03)
+
+**Stack elegido por el usuario (decisiones confirmadas 2026-10-03):**
+- Frontend: **Vue 3** (Vite, Pinia, fetch nativo, sin TypeScript en v2)
+- Backend: **Spring Boot LTS + Java 25 + Gradle** (ver ADR-004 — override explícito del default Java 8)
+- Base de datos: **PostgreSQL** (esquema gestionado con Flyway)
+- Autenticación: **JWT** con dos roles (`ADMIN` y `ARRENDATARIO`). El admin se crea en seed. Al registrar un arrendatario el admin define su usuario y contraseña inicial. El arrendatario puede cambiarla después.
+- Zona horaria del negocio: **America/Guayaquil**
+- Despliegue AWS: **CloudFront + S3 (frontend) + EC2 (backend jar) + RDS (PostgreSQL privado)** (ver ADR-007)
+- Política de despliegue: AWS manual (sin cambios)
+
+**Qué cambia respecto a v1:**
+- `store.js` se reemplaza por llamadas a API REST (fetch/axios desde Vue).
+- `data.js` se elimina; los datos viven en PostgreSQL.
+- `render.js` e `index.html` vanilla se reemplazan por componentes Vue.
+- `calc.js` puede reutilizarse o portarse al backend (a definir por el architect).
+- Se agrega un servidor Spring Boot con endpoints REST.
+- Se requiere build de frontend (Vite + Vue 3).
+
+**Lo que permanece igual:**
+- Modelo de datos conceptual (Tenant, paidMonths, oneTimeCharges).
+- Lógica de negocio de `calc.js` (portarse al backend como servicio).
+- Política de despliegue manual en AWS.
+- Nunca se escriben secretos en el repositorio.
